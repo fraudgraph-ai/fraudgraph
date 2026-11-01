@@ -105,3 +105,19 @@ class BenchmarkRunner:
         }
 
 benchmark_runner = BenchmarkRunner()
+
+if __name__ == "__main__":
+    res = benchmark_runner.run_benchmark_suite()
+    print("=" * 72)
+    print("🏆 FraudGraph AI — Cross-Dataset Empirical Benchmark Matrix (RQ-07)")
+    print("=" * 72)
+    print(f"Top Performer:             {res['top_performer']}")
+    print(f"Empirical PR-AUC Lift:     {res['empirical_lift_vs_tabular']}")
+    print(f"Brier Calibration Gain:    {res['calibration_gain_brier']}")
+    print(f"Generalization Resilience: {res['generalization_resilience_rq07']}")
+    print("-" * 72)
+    print(f"{'STATUS':<12} | {'MODEL NAME':<32} | {'AMLSIM':<8} | {'ELLIPTIC':<8} | {'TRANSXION':<9} | {'DROP'}")
+    print("-" * 72)
+    for m in res['leaderboard']:
+        print(f"{m['status'].upper():<12} | {m['name'][:32]:<32} | {m['amlsim_prauc']:<8.3f} | {m['elliptic_prauc']:<8.3f} | {m['transxion_prauc']:<9.3f} | {m['generalization_drop']}")
+    print("=" * 72)

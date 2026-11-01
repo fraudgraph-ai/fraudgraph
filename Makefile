@@ -47,6 +47,15 @@ test-e2e: ## Run Playwright end-to-end browser automation tests
 	@echo -e "$(CYAN)Executing Playwright E2E browser tests...$(RESET)"
 	npm run test:e2e
 
+.PHONY: benchmark
+benchmark: ## Execute empirical cross-dataset benchmark matrix (RQ-07)
+	@echo -e "$(CYAN)Executing cross-dataset empirical benchmark runner...$(RESET)"
+	PYTHONPATH=apps/api apps/api/.venv/bin/python3 -m src.core.benchmark_runner
+
+.PHONY: smoke
+smoke: ## Run automated smoke test validating live endpoints against transient server
+	@echo -e "$(CYAN)Executing automated API smoke test...$(RESET)"
+	@bash scripts/smoke_test.sh
 
 .PHONY: build
 build: ## Verify TypeScript types and compile production Vite bundle
