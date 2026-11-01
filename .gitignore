@@ -48,3 +48,15 @@ coverage
 # Temporary files
 tmp/
 temp/
+
+# Python Virtual Environments & Bytecode
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
