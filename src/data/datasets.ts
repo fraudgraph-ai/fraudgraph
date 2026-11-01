@@ -746,3 +746,12 @@ export const datasetsCatalog: Record<string, DatasetPayload> = {
   'Elliptic++ Bitcoin': ellipticDataset,
   'TransXion Ecosystem': transxionDataset,
 };
+
+export const getDatasetPayload = (keyOrId: string): DatasetPayload => {
+  if (datasetsCatalog[keyOrId]) return datasetsCatalog[keyOrId];
+  const found = Object.values(datasetsCatalog).find(
+    (d) => d.id === keyOrId || d.name.toLowerCase().includes(keyOrId.toLowerCase())
+  );
+  return found || amlsimDataset;
+};
+
