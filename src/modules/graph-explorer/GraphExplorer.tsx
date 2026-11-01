@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -9,10 +9,15 @@ import {
   Sparkles,
   Maximize2,
   ChevronDown,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
-import { InteractiveFinancialGraph } from '../../components/graph/InteractiveFinancialGraph';
+import {
+  InteractiveFinancialGraph,
+  AnalysisResultsData,
+} from '../../components/graph/InteractiveFinancialGraph';
 import { EntityInspectorPanel } from '../../components/graph/EntityInspectorPanel';
-import { initialGraphNodes, initialGraphEdges } from '../../data/mockData';
+import { datasetsCatalog } from '../../data/datasets';
 import { calculatePageRank, detectCircularFlows } from '../../utils/graphAlgorithms';
 import { useToast } from '../../components/ui/Toast';
 import { GraphNodeData, NavigationModule } from '../../types';
@@ -22,6 +27,8 @@ interface GraphExplorerProps {
   onOpenCase: (caseId: string) => void;
   onViewEvidence: (evidenceId: string) => void;
   initialSelectedNodeId?: string;
+  selectedDataset?: string;
+  selectedTimeRange?: string;
 }
 
 export const GraphExplorer: React.FC<GraphExplorerProps> = ({
@@ -29,20 +36,51 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
   onOpenCase,
   onViewEvidence,
   initialSelectedNodeId = 'node-center',
+  selectedDataset = 'IBM AMLSim 500K',
+  selectedTimeRange = 'Last 30 Days',
 }) => {
   const { toast } = useToast();
-  const [nodes, setNodes] = useState<GraphNodeData[]>(initialGraphNodes);
-  const [edges, setEdges] = useState(initialGraphEdges);
-  const [selectedNodeId, setSelectedNodeId] = useState<string>(initialSelectedNodeId);
+
+  // Active dataset payload
+  const currentDatasetPayload = datasetsCatalog[selectedDataset] || datasetsCatalog['IBM AMLSim 500K'];
+
+  const [nodes, setNodes] = useState<GraphNodeData[]>(currentDatasetPayload.nodes);
+  const [edges, setEdges] = useState(currentDatasetPayload.edges);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>(
+    currentDatasetPayload.nodes.find((n) => n.isCenter)?.id || currentDatasetPayload.nodes[0]?.id
+  );
 
   // Filter states
   const [entityTypeFilter, setEntityTypeFilter] = useState<string>('all');
   const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
   const [amountFilter, setAmountFilter] = useState<string>('all');
-  const [timeRangeFilter, setTimeRangeFilter] = useState<string>('30d');
+  const [timeRangeFilter, setTimeRangeFilter] = useState<string>(selectedTimeRange);
   const [showCommunities, setShowCommunities] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResultsData | null>(null);
+
+  // Synchronize with dataset changes from Header or props
+  useEffect(() => {
+    const payload = datasetsCatalog[selectedDataset] || datasetsCatalog['IBM AMLSim 500K'];
+    setNodes(payload.nodes);
+    setEdges(payload.edges);
+    const centerNode = payload.nodes.find((n) => n.isCenter) || payload.nodes[0];
+    if (centerNode) {
+      setSelectedNodeId(centerNode.id);
+    }
+    setAnalysisResults(null);
+    toast({
+      type: 'info',
+      title: `Active Graph Dataset Switched`,
+      description: `Loaded ${payload.name} (${payload.nodes.length} entities, ${payload.edges.length} transfer edges in ${payload.currency}).`,
+    });
+  }, [selectedDataset]);
+
+  // Synchronize timeRangeFilter with header
+  useEffect(() => {
+    setTimeRangeFilter(selectedTimeRange);
+  }, [selectedTimeRange]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || nodes[0];
 
@@ -50,43 +88,53 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
     setIsAnalyzing(true);
     toast({
       type: 'info',
-      title: 'Executing Graph Analytics Engine',
-      description: 'Computing PageRank centrality & Johnson cycle detection over directed edges...',
+      title: 'Running Graph ML & Analytics Engine',
+      description: `Analyzing ${selectedDataset} with ${amountFilter !== 'all' ? `Amount filter [${amountFilter}]` : 'full topology'} over ${timeRangeFilter}...`,
     });
 
     setTimeout(() => {
-      // Calculate real PageRank
+      // Execute PageRank over current edges
       const ranks = calculatePageRank(
         nodes.map((n) => ({ id: n.id, label: n.label, riskScore: n.riskScore })),
         edges.map((e) => ({ id: e.id, source: e.source, target: e.target, amount: e.amount }))
       );
 
-      // Detect circular flows
-      const cycles = detectCircularFlows(
+      // Execute Johnson Cycle Detection over current edges
+      const detectedCycles = detectCircularFlows(
         nodes.map((n) => ({ id: n.id, label: n.label, riskScore: n.riskScore })),
         edges.map((e) => ({ id: e.id, source: e.source, target: e.target, amount: e.amount }))
       );
 
+      const highRisk = nodes.filter((n) => n.riskLevel === 'high').length;
+
+      const res: AnalysisResultsData = {
+        analyzedAt: new Date().toLocaleTimeString(),
+        pagerank: ranks,
+        cycles: detectedCycles,
+        highRiskCount: highRisk,
+      };
+
+      setAnalysisResults(res);
       setIsAnalyzing(false);
       setShowCommunities(true);
 
       toast({
         type: 'success',
         title: 'Network Analysis Completed',
-        description: `PageRank centrality mapped for ${Object.keys(ranks).length} nodes. ${cycles.length > 0 ? `${cycles.length} circular round-trip cycles detected.` : 'No complete circular round-trips in current radius.'}`,
+        description: `PageRank centrality mapped for ${Object.keys(ranks).length} nodes. Found ${detectedCycles.length} circular loops. ${highRisk} high-risk anchors flagged.`,
       });
-    }, 900);
+    }, 850);
   };
 
   const handleExportGraphJSON = () => {
     const graphData = {
       exportedAt: new Date().toISOString(),
-      metadata: {
-        filterRisk: riskLevelFilter,
-        filterType: entityTypeFilter,
-        nodeCount: nodes.length,
-        edgeCount: edges.length,
-      },
+      dataset: selectedDataset,
+      timeRange: timeRangeFilter,
+      amountFilter,
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      analysis: analysisResults,
       nodes,
       edges,
     };
@@ -97,14 +145,14 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `FINANCIAL_GRAPH_EXPORT_${Date.now()}.json`;
+    a.download = `${selectedDataset.replace(/[^a-zA-Z0-9]/g, '_')}_GRAPH_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
 
     toast({
       type: 'success',
       title: 'Graph Snapshot Exported',
-      description: 'Full JSON topology and node metadata downloaded.',
+      description: `Downloaded JSON topology for ${selectedDataset}.`,
     });
   };
 
@@ -115,6 +163,9 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
         <div>
           <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
             Graph Explorer
+            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-cyan-300 border border-blue-500/30">
+              {selectedDataset}
+            </span>
           </h1>
           <p className="text-[11px] text-slate-400">
             Explore transaction networks, entity relationships and risk patterns.
@@ -143,7 +194,7 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs shadow-md shadow-blue-600/30 transition-all active:scale-95"
           >
             <Play className={`w-3.5 h-3.5 fill-white ${isAnalyzing ? 'animate-spin' : ''}`} />
-            <span>{isAnalyzing ? 'Analyzing Network...' : 'Run Analysis'}</span>
+            <span>{isAnalyzing ? 'Analyzing Graph...' : 'Run Analysis'}</span>
           </button>
         </div>
       </div>
@@ -160,12 +211,12 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
               className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer"
             >
               <option value="all" className="bg-[#0f172a]">All Types</option>
-              <option value="account" className="bg-[#0f172a]">Bank Accounts</option>
+              <option value="account" className="bg-[#0f172a]">Accounts / Wallets</option>
               <option value="person" className="bg-[#0f172a]">Persons / Owners</option>
               <option value="card" className="bg-[#0f172a]">Cards</option>
               <option value="device" className="bg-[#0f172a]">Devices</option>
               <option value="ip" className="bg-[#0f172a]">IP Addresses</option>
-              <option value="organization" className="bg-[#0f172a]">Corporate</option>
+              <option value="organization" className="bg-[#0f172a]">Corporate / Mixers</option>
             </select>
           </div>
 
@@ -186,16 +237,29 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
 
           {/* Amount Filter */}
           <div className="flex items-center gap-1.5 bg-[#0f172a] px-2.5 py-1 rounded-md border border-white/[0.06]">
-            <span className="text-slate-400 text-[11px]">Amount:</span>
+            <span className="text-slate-400 text-[11px]">Amount Threshold:</span>
             <select
               value={amountFilter}
-              onChange={(e) => setAmountFilter(e.target.value)}
-              className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer"
+              onChange={(e) => {
+                setAmountFilter(e.target.value);
+                toast({
+                  type: 'info',
+                  title: 'Transfer Amount Filter Updated',
+                  description: `Filtering transactions with amount threshold: ${e.target.value.toUpperCase()}.`,
+                });
+              }}
+              className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer font-medium"
             >
-              <option value="all" className="bg-[#0f172a]">Any Amount</option>
-              <option value="1m" className="bg-[#0f172a]">&gt; ₺1,000,000</option>
-              <option value="5m" className="bg-[#0f172a]">&gt; ₺5,000,000</option>
-              <option value="10m" className="bg-[#0f172a]">&gt; ₺10,000,000</option>
+              <option value="all" className="bg-[#0f172a]">Any Amount (All)</option>
+              <option value="1m" className="bg-[#0f172a]">
+                ≥ {currentDatasetPayload.currencySymbol}{currentDatasetPayload.currency === 'BTC' ? '10 BTC' : '1,000,000'}
+              </option>
+              <option value="5m" className="bg-[#0f172a]">
+                ≥ {currentDatasetPayload.currencySymbol}{currentDatasetPayload.currency === 'BTC' ? '50 BTC' : '5,000,000'}
+              </option>
+              <option value="10m" className="bg-[#0f172a]">
+                ≥ {currentDatasetPayload.currencySymbol}{currentDatasetPayload.currency === 'BTC' ? '100 BTC' : '10,000,000'}
+              </option>
             </select>
           </div>
 
@@ -204,12 +268,20 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
             <span className="text-slate-400 text-[11px]">Time Range:</span>
             <select
               value={timeRangeFilter}
-              onChange={(e) => setTimeRangeFilter(e.target.value)}
+              onChange={(e) => {
+                setTimeRangeFilter(e.target.value);
+                toast({
+                  type: 'info',
+                  title: 'Time Window Adjusted',
+                  description: `Graph temporal scope set to: ${e.target.value}.`,
+                });
+              }}
               className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer"
             >
-              <option value="24h" className="bg-[#0f172a]">Last 24 Hours</option>
-              <option value="7d" className="bg-[#0f172a]">Last 7 Days</option>
-              <option value="30d" className="bg-[#0f172a]">Last 30 Days</option>
+              <option value="Last 24 Hours" className="bg-[#0f172a]">Last 24 Hours</option>
+              <option value="Last 7 Days" className="bg-[#0f172a]">Last 7 Days</option>
+              <option value="Last 30 Days" className="bg-[#0f172a]">Last 30 Days</option>
+              <option value="All Time" className="bg-[#0f172a]">All Time</option>
             </select>
           </div>
         </div>
@@ -248,6 +320,9 @@ export const GraphExplorer: React.FC<GraphExplorerProps> = ({
             showCommunities={showCommunities}
             filterRisk={riskLevelFilter}
             filterType={entityTypeFilter}
+            filterAmount={amountFilter}
+            currencySymbol={currentDatasetPayload.currencySymbol}
+            analysisResults={analysisResults}
           />
         </div>
 

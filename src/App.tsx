@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { CommandPalette } from './components/layout/CommandPalette';
-import { ToastProvider } from './components/ui/Toast';
+import { ToastProvider, useToast } from './components/ui/Toast';
 import { CommandCenter } from './modules/command-center/CommandCenter';
 import { GraphExplorer } from './modules/graph-explorer/GraphExplorer';
 import { InvestigationWorkspace } from './modules/investigation/InvestigationWorkspace';
@@ -17,7 +17,8 @@ import { ComplianceAudit } from './modules/compliance/ComplianceAudit';
 import { SystemAdmin } from './modules/admin/SystemAdmin';
 import { NavigationModule } from './types';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { toast } = useToast();
   const [currentModule, setCurrentModule] = useState<NavigationModule>('command-center');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('FG-8421');
   const [selectedNodeId, setSelectedNodeId] = useState<string>('node-center');
@@ -53,114 +54,147 @@ export const App: React.FC = () => {
 
   const handleTriggerAnalysis = () => {
     setCurrentModule('graph-explorer');
+    toast({
+      type: 'info',
+      title: 'Switched to Graph Analytics',
+      description: `Analyzing ${selectedDataset} network over ${selectedTimeRange}. Click "Run Analysis" on the toolbar for deep cycle & centrality breakdown.`,
+    });
+  };
+
+  const handleDatasetChange = (dataset: string) => {
+    setSelectedDataset(dataset);
+    toast({
+      type: 'success',
+      title: 'Active Dataset Switched',
+      description: `Loaded dataset "${dataset}". All metrics, transactions, and graphs updated.`,
+    });
+  };
+
+  const handleTimeRangeChange = (range: string) => {
+    setSelectedTimeRange(range);
+    toast({
+      type: 'info',
+      title: 'Investigation Time Window Adjusted',
+      description: `Active time scope filtered to: ${range}.`,
+    });
   };
 
   return (
-    <ToastProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-[#090d16] text-slate-100 font-sans">
-        {/* Persistent Enterprise Sidebar */}
-        <Sidebar
+    <div className="flex h-screen w-screen overflow-hidden bg-[#090d16] text-slate-100 font-sans">
+      {/* Persistent Enterprise Sidebar */}
+      <Sidebar
+        currentModule={currentModule}
+        onSelectModule={(mod) => setCurrentModule(mod)}
+      />
+
+      {/* Main Workspace Column */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Contextual Top Header */}
+        <Header
           currentModule={currentModule}
-          onSelectModule={(mod) => setCurrentModule(mod)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          selectedDataset={selectedDataset}
+          onSelectDataset={handleDatasetChange}
+          selectedTimeRange={selectedTimeRange}
+          onSelectTimeRange={handleTimeRangeChange}
+          onTriggerAnalysis={handleTriggerAnalysis}
         />
 
-        {/* Main Workspace Column */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          {/* Contextual Top Header */}
-          <Header
-            currentModule={currentModule}
-            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-            selectedDataset={selectedDataset}
-            onSelectDataset={setSelectedDataset}
-            selectedTimeRange={selectedTimeRange}
-            onSelectTimeRange={setSelectedTimeRange}
-            onTriggerAnalysis={handleTriggerAnalysis}
-          />
+        {/* Dynamic View Router */}
+        <main className="flex-1 flex overflow-hidden bg-[#090d16]">
+          {currentModule === 'command-center' && (
+            <CommandCenter
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+              selectedDataset={selectedDataset}
+              selectedTimeRange={selectedTimeRange}
+            />
+          )}
 
-          {/* Dynamic View Router */}
-          <main className="flex-1 flex overflow-hidden bg-[#090d16]">
-            {currentModule === 'command-center' && (
-              <CommandCenter
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-              />
-            )}
+          {currentModule === 'graph-explorer' && (
+            <GraphExplorer
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+              onViewEvidence={handleViewEvidence}
+              initialSelectedNodeId={selectedNodeId}
+              selectedDataset={selectedDataset}
+              selectedTimeRange={selectedTimeRange}
+            />
+          )}
 
-            {currentModule === 'graph-explorer' && (
-              <GraphExplorer
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-                onViewEvidence={handleViewEvidence}
-                initialSelectedNodeId={selectedNodeId}
-              />
-            )}
+          {currentModule === 'investigation' && (
+            <InvestigationWorkspace
+              currentCaseId={selectedCaseId}
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onViewEvidence={handleViewEvidence}
+            />
+          )}
 
-            {currentModule === 'investigation' && (
-              <InvestigationWorkspace
-                currentCaseId={selectedCaseId}
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onViewEvidence={handleViewEvidence}
-              />
-            )}
+          {currentModule === 'agents' && (
+            <AgentOperations
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+            />
+          )}
 
-            {currentModule === 'agents' && (
-              <AgentOperations
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-              />
-            )}
+          {currentModule === 'alerts' && (
+            <AlertIntelligence
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+            />
+          )}
 
-            {currentModule === 'alerts' && (
-              <AlertIntelligence
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-              />
-            )}
+          {currentModule === 'transactions' && (
+            <TransactionIntelligence
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+            />
+          )}
 
-            {currentModule === 'transactions' && (
-              <TransactionIntelligence
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-              />
-            )}
+          {currentModule === 'evidence' && (
+            <EvidenceCenter
+              onNavigate={(mod) => setCurrentModule(mod)}
+              onOpenCase={handleOpenCase}
+            />
+          )}
 
-            {currentModule === 'evidence' && (
-              <EvidenceCenter
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onOpenCase={handleOpenCase}
-              />
-            )}
+          {currentModule === 'risk-analytics' && (
+            <RiskAnalytics onNavigate={(mod) => setCurrentModule(mod)} />
+          )}
 
-            {currentModule === 'risk-analytics' && (
-              <RiskAnalytics onNavigate={(mod) => setCurrentModule(mod)} />
-            )}
+          {currentModule === 'models' && (
+            <ModelIntelligence onNavigate={(mod) => setCurrentModule(mod)} />
+          )}
 
-            {currentModule === 'models' && (
-              <ModelIntelligence onNavigate={(mod) => setCurrentModule(mod)} />
-            )}
+          {currentModule === 'datasets' && (
+            <DatasetRegistry onNavigate={(mod) => setCurrentModule(mod)} />
+          )}
 
-            {currentModule === 'datasets' && (
-              <DatasetRegistry onNavigate={(mod) => setCurrentModule(mod)} />
-            )}
+          {currentModule === 'compliance' && (
+            <ComplianceAudit onNavigate={(mod) => setCurrentModule(mod)} />
+          )}
 
-            {currentModule === 'compliance' && (
-              <ComplianceAudit onNavigate={(mod) => setCurrentModule(mod)} />
-            )}
-
-            {currentModule === 'system-admin' && (
-              <SystemAdmin onNavigate={(mod) => setCurrentModule(mod)} />
-            )}
-          </main>
-        </div>
-
-        {/* Global Command Palette Modal */}
-        <CommandPalette
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          onNavigate={(mod) => setCurrentModule(mod)}
-          onSelectEntity={handleSelectEntity}
-        />
+          {currentModule === 'system-admin' && (
+            <SystemAdmin onNavigate={(mod) => setCurrentModule(mod)} />
+          )}
+        </main>
       </div>
+
+      {/* Global Command Palette Modal */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(mod) => setCurrentModule(mod)}
+        onSelectEntity={handleSelectEntity}
+      />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
     </ToastProvider>
   );
 };

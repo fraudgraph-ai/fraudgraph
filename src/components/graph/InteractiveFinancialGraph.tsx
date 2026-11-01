@@ -14,8 +14,17 @@ import {
   MousePointer,
   Hand,
   Sparkles,
+  Layers,
+  Filter,
 } from 'lucide-react';
 import { GraphNodeData, GraphEdgeData, RiskLevel } from '../../types';
+
+export interface AnalysisResultsData {
+  analyzedAt: string;
+  pagerank: Record<string, number>;
+  cycles: string[][];
+  highRiskCount: number;
+}
 
 interface InteractiveFinancialGraphProps {
   nodes: GraphNodeData[];
@@ -25,13 +34,14 @@ interface InteractiveFinancialGraphProps {
   showCommunities?: boolean;
   filterRisk?: string;
   filterType?: string;
+  filterAmount?: string;
+  currencySymbol?: string;
+  analysisResults?: AnalysisResultsData | null;
 }
 
 interface NodePosition {
   x: number;
   y: number;
-  vx?: number;
-  vy?: number;
 }
 
 export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps> = ({
@@ -42,6 +52,9 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
   showCommunities = false,
   filterRisk = 'all',
   filterType = 'all',
+  filterAmount = 'all',
+  currencySymbol = '₺',
+  analysisResults = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState<number>(1);
@@ -51,7 +64,7 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<'select' | 'pan'>('select');
 
-  // Pre-calculated aesthetic radial coordinates around center TR-90421073
+  // Pre-calculated aesthetic radial coordinates
   const [nodePositions, setNodePositions] = useState<Record<string, NodePosition>>({
     'node-center': { x: 420, y: 310 },
     'node-person-1': { x: 420, y: 470 },
@@ -65,17 +78,57 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
     'node-device-1': { x: 470, y: 130 },
     'node-ip-1': { x: 380, y: 480 },
     'node-org-1': { x: 670, y: 110 },
+    // Bitcoin nodes
+    'btc-mixer-hub': { x: 420, y: 310 },
+    'btc-ransomware-wallet': { x: 260, y: 210 },
+    'btc-darknet-vendor': { x: 250, y: 390 },
+    'btc-peel-chain-1': { x: 580, y: 240 },
+    'btc-exchange-deposit': { x: 680, y: 380 },
+    'btc-miner-pool': { x: 540, y: 460 },
+    // TransXion nodes
+    'tx-corp-center': { x: 420, y: 310 },
+    'tx-meridian-logistics': { x: 590, y: 200 },
+    'tx-bosphorus-trust': { x: 570, y: 420 },
+    'tx-cayman-shell': { x: 270, y: 330 },
   });
 
-  // Filter nodes according to dropdown filters
+  // Calculate minimum amount cutoff based on currency
+  const getMinAmount = (filter: string) => {
+    const isCrypto = currencySymbol === '₿';
+    if (filter === '1m') return isCrypto ? 10 : 1000000;
+    if (filter === '5m') return isCrypto ? 50 : 5000000;
+    if (filter === '10m') return isCrypto ? 100 : 10000000;
+    return 0;
+  };
+
+  const minAmount = getMinAmount(filterAmount);
+
+  // 1. Filter edges by amount threshold (only filter non-zero transfer edges)
+  const amountFilteredEdges = edges.filter((e) => {
+    if (filterAmount === 'all') return true;
+    if (e.amount === 0) return false; // non-transfer edges hidden in high amount modes
+    return e.amount >= minAmount;
+  });
+
+  // Active connected node IDs from remaining edges
+  const activeConnectedNodeIds = new Set<string>();
+  amountFilteredEdges.forEach((e) => {
+    activeConnectedNodeIds.add(e.source);
+    activeConnectedNodeIds.add(e.target);
+  });
+
+  // 2. Filter nodes by risk, type, and amount connectivity
   const filteredNodes = nodes.filter((n) => {
     if (filterRisk !== 'all' && n.riskLevel !== filterRisk) return false;
     if (filterType !== 'all' && n.type !== filterType) return false;
+    if (filterAmount !== 'all' && !n.isCenter && !activeConnectedNodeIds.has(n.id)) {
+      return false;
+    }
     return true;
   });
 
   const filteredNodeIds = new Set(filteredNodes.map((n) => n.id));
-  const filteredEdges = edges.filter(
+  const filteredEdges = amountFilteredEdges.filter(
     (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target)
   );
 
@@ -93,7 +146,6 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
         y: e.clientY - dragStart.y,
       });
     } else if (draggedNodeId) {
-      // Calculate node new position considering zoom and pan
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
         const mouseX = (e.clientX - rect.left - pan.x) / zoom;
@@ -140,7 +192,7 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
   };
 
   const getNodeStyles = (node: GraphNodeData) => {
-    if (node.isCenter || node.id === 'node-center') {
+    if (node.isCenter) {
       return {
         bg: 'bg-red-600',
         border: 'border-red-400',
@@ -285,13 +337,45 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
         </button>
       </div>
 
-      {/* Community Overlay Indicator */}
-      {showCommunities && (
-        <div className="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-lg bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 text-xs font-medium flex items-center gap-2 backdrop-blur-md shadow-lg">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Louvain Community #4 Highlighted (6 Accounts)</span>
-        </div>
-      )}
+      {/* Dynamic Filter / Analysis Status Banners */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+        {/* Analysis Results Overlay */}
+        {analysisResults && (
+          <div className="pointer-events-auto px-3.5 py-2 rounded-xl bg-cyan-950/90 border border-cyan-400/50 text-cyan-200 text-xs font-medium backdrop-blur-md shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-top-3">
+            <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+            <div>
+              <span className="font-bold text-white block">Network Analytics Active</span>
+              <span className="text-[10px] text-cyan-300 block">
+                {Object.keys(analysisResults.pagerank).length} Centralities Mapped · {analysisResults.cycles.length} Cycles Found
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Filter State Indicator */}
+        {filterAmount !== 'all' && (
+          <div className="pointer-events-auto px-3 py-1.5 rounded-lg bg-[#0e1627]/90 border border-amber-500/40 text-amber-300 text-xs font-mono backdrop-blur-md shadow-lg flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-amber-400" />
+            <span>
+              Threshold ≥ {currencySymbol}
+              {filterAmount === '1m'
+                ? currencySymbol === '₿' ? '10' : '1.0M'
+                : filterAmount === '5m'
+                ? currencySymbol === '₿' ? '50' : '5.0M'
+                : currencySymbol === '₿' ? '100' : '10.0M'}
+              {' '}(Showing {filteredNodes.length}/{nodes.length} Nodes)
+            </span>
+          </div>
+        )}
+
+        {/* Community Overlay Indicator */}
+        {showCommunities && (
+          <div className="pointer-events-auto px-3 py-1.5 rounded-lg bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 text-xs font-medium flex items-center gap-2 backdrop-blur-md shadow-lg">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Louvain Community Highlighted ({filteredNodes.length} Entities)</span>
+          </div>
+        )}
+      </div>
 
       {/* SVG Canvas for High-Precision Edges & Pulsing Nodes */}
       <svg
@@ -322,16 +406,6 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
           >
             <polygon points="0 0, 8 3, 0 6" fill="#3b82f6" />
           </marker>
-          <marker
-            id="arrowhead-gray"
-            markerWidth="8"
-            markerHeight="6"
-            refX="24"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
-          </marker>
         </defs>
 
         {/* Render Edges */}
@@ -344,14 +418,13 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
 
           return (
             <g key={edge.id}>
-              {/* Suspicious or standard edge */}
               <line
                 x1={sPos.x}
                 y1={sPos.y}
                 x2={tPos.x}
                 y2={tPos.y}
                 stroke={edge.isSuspicious ? '#ef4444' : '#334155'}
-                strokeWidth={edge.isSuspicious ? 2.2 : 1.4}
+                strokeWidth={edge.isSuspicious ? 2.4 : 1.4}
                 strokeDasharray={edge.isSuspicious ? '5 4' : 'none'}
                 markerEnd={
                   edge.isSuspicious
@@ -364,15 +437,15 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
               {edge.amount > 0 && (
                 <g transform={`translate(${midX}, ${midY})`}>
                   <rect
-                    x="-38"
+                    x="-40"
                     y="-10"
-                    width="76"
+                    width="80"
                     height="18"
                     rx="9"
                     fill="#0b1120"
                     stroke={edge.isSuspicious ? '#ef4444' : '#3b82f6'}
                     strokeWidth="1"
-                    strokeOpacity="0.5"
+                    strokeOpacity="0.6"
                   />
                   <text
                     x="0"
@@ -383,7 +456,10 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
                     fontWeight="600"
                     fontFamily="monospace"
                   >
-                    ₺{(edge.amount / 1000000).toFixed(1)}M
+                    {currencySymbol}
+                    {currencySymbol === '₿'
+                      ? `${edge.amount} BTC`
+                      : `${(edge.amount / 1000000).toFixed(1)}M`}
                   </text>
                 </g>
               )}
@@ -421,7 +497,7 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
               className="absolute pointer-events-auto flex flex-col items-center cursor-pointer group"
             >
               {/* Halo animation for center / high risk node */}
-              {(node.isCenter || node.id === 'node-center') && (
+              {node.isCenter && (
                 <div className="absolute inset-0 -m-3 rounded-full bg-red-500/25 animate-ping pointer-events-none" />
               )}
 
@@ -449,7 +525,7 @@ export const InteractiveFinancialGraph: React.FC<InteractiveFinancialGraphProps>
 
               {/* Node Label Below */}
               <div className="mt-1.5 flex flex-col items-center">
-                <span className="text-[11px] font-semibold text-slate-200 tracking-tight whitespace-nowrap bg-[#0b1120]/80 px-2 py-0.5 rounded border border-white/[0.08] backdrop-blur-sm shadow">
+                <span className="text-[11px] font-semibold text-slate-200 tracking-tight whitespace-nowrap bg-[#0b1120]/90 px-2 py-0.5 rounded border border-white/[0.08] backdrop-blur-sm shadow max-w-[200px] truncate">
                   {node.label}
                 </span>
 

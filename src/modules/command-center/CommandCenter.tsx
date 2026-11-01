@@ -9,7 +9,7 @@ import {
   ArrowUpRight,
   Sparkles,
 } from 'lucide-react';
-import { commandCenterMetrics, casesList } from '../../data/mockData';
+import { datasetsCatalog } from '../../data/datasets';
 import { RiskDistributionDonut } from '../../components/charts/RiskDistributionDonut';
 import { AlertTrendChart } from '../../components/charts/AlertTrendChart';
 import { AgentHealthGauge } from '../../components/charts/AgentHealthGauge';
@@ -18,9 +18,44 @@ import { Case, NavigationModule } from '../../types';
 interface CommandCenterProps {
   onNavigate: (module: NavigationModule) => void;
   onOpenCase: (caseId: string) => void;
+  selectedDataset?: string;
+  selectedTimeRange?: string;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpenCase }) => {
+export const CommandCenter: React.FC<CommandCenterProps> = ({
+  onNavigate,
+  onOpenCase,
+  selectedDataset = 'IBM AMLSim 500K',
+  selectedTimeRange = 'Last 30 Days',
+}) => {
+  const currentDataset = datasetsCatalog[selectedDataset] || datasetsCatalog['IBM AMLSim 500K'];
+  const baseMetrics = currentDataset.metrics;
+
+  // Dynamically calculate metrics based on time range multiplier
+  const getTimeMultiplier = (range: string) => {
+    switch (range) {
+      case 'Last 24 Hours':
+        return 0.12;
+      case 'Last 7 Days':
+        return 0.38;
+      case 'All Time':
+        return 2.4;
+      default:
+        return 1.0; // Last 30 Days
+    }
+  };
+
+  const multiplier = getTimeMultiplier(selectedTimeRange);
+
+  const activeInvestigationsCount = Math.max(
+    1,
+    Math.round(baseMetrics.activeInvestigations.value * multiplier)
+  );
+  const highPriorityAlertsCount = Math.max(
+    1,
+    Math.round(baseMetrics.highPriorityAlerts.value * multiplier)
+  );
+
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       {/* Page Header */}
@@ -28,9 +63,13 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             Command Center
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-cyan-300 border border-blue-500/30">
+              {currentDataset.id} · {selectedTimeRange}
+            </span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time fraud intelligence, investigations and system health.
+            Real-time fraud intelligence, investigations and system health for{' '}
+            <span className="text-slate-300 font-semibold">{currentDataset.name}</span>.
           </p>
         </div>
       </div>
@@ -50,14 +89,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
           </div>
           <div className="mt-3 flex items-baseline gap-2.5">
             <span className="text-2xl font-bold font-mono text-white tracking-tight">
-              {commandCenterMetrics.activeInvestigations.value}
+              {activeInvestigationsCount}
             </span>
             <span className="flex items-center text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingDown className="w-3 h-3 mr-0.5" />
-              {commandCenterMetrics.activeInvestigations.change}%
+              {baseMetrics.activeInvestigations.change}%
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">12 currently assigned to AI Agents</p>
+          <p className="text-[11px] text-slate-500 mt-1">In scope for {selectedTimeRange}</p>
         </div>
 
         {/* High-Priority Alerts */}
@@ -73,11 +112,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
           </div>
           <div className="mt-3 flex items-baseline gap-2.5">
             <span className="text-2xl font-bold font-mono text-white tracking-tight">
-              {commandCenterMetrics.highPriorityAlerts.value}
+              {highPriorityAlertsCount}
             </span>
             <span className="flex items-center text-xs font-mono font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3 mr-0.5" />+
-              {commandCenterMetrics.highPriorityAlerts.change}%
+              {baseMetrics.highPriorityAlerts.change}%
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Requires immediate analyst triage</p>
@@ -96,14 +135,18 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
           </div>
           <div className="mt-3 flex items-baseline gap-2.5">
             <span className="text-2xl font-bold font-mono text-white tracking-tight">
-              {commandCenterMetrics.flaggedTransactions.value}
+              {selectedTimeRange === 'Last 24 Hours'
+                ? '4.2K'
+                : selectedTimeRange === 'Last 7 Days'
+                ? '38.5K'
+                : baseMetrics.flaggedTransactions.value}
             </span>
             <span className="flex items-center text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingDown className="w-3 h-3 mr-0.5" />
-              {commandCenterMetrics.flaggedTransactions.change}%
+              {baseMetrics.flaggedTransactions.change}%
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">Across 180 simulated stream windows</p>
+          <p className="text-[11px] text-slate-500 mt-1">Evaluated in {selectedTimeRange}</p>
         </div>
 
         {/* Estimated Risk Exposure */}
@@ -118,15 +161,15 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
             </span>
           </div>
           <div className="mt-3 flex items-baseline gap-2.5">
-            <span className="text-2xl font-bold font-mono text-white tracking-tight">
-              {commandCenterMetrics.estimatedRiskExposure.value}
+            <span className="text-xl font-bold font-mono text-white tracking-tight">
+              {baseMetrics.estimatedRiskExposure.value}
             </span>
             <span className="flex items-center text-xs font-mono font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3 mr-0.5" />+
-              {commandCenterMetrics.estimatedRiskExposure.change}%
+              {baseMetrics.estimatedRiskExposure.change}%
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">Active fund preservation scope</p>
+          <p className="text-[11px] text-slate-500 mt-1">Currency: {currentDataset.currency}</p>
         </div>
       </div>
 
@@ -140,11 +183,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
               <p className="text-xs text-slate-400">Segmented transaction volume classification</p>
             </div>
             <span className="text-[11px] font-mono text-slate-500 bg-white/[0.04] px-2 py-0.5 rounded">
-              184.2K Evaluated
+              {baseMetrics.riskDistribution.total} Evaluated
             </span>
           </div>
           <div className="py-2">
-            <RiskDistributionDonut />
+            <RiskDistributionDonut
+              highRisk={baseMetrics.riskDistribution.highRisk}
+              mediumRisk={baseMetrics.riskDistribution.mediumRisk}
+              lowRisk={baseMetrics.riskDistribution.lowRisk}
+              total={baseMetrics.riskDistribution.total}
+            />
           </div>
         </div>
 
@@ -156,10 +204,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
               <p className="text-xs text-slate-400">Time-series alert volume by severity</p>
             </div>
             <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-2 py-0.5 rounded">
-              March 2025
+              {currentDataset.id}
             </span>
           </div>
-          <AlertTrendChart />
+          <AlertTrendChart data={baseMetrics.alertTrend} />
         </div>
       </div>
 
@@ -186,12 +234,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
           </div>
         </div>
 
-        {/* Recent Investigations Table */}
+        {/* Recent Investigations Table for this Dataset */}
         <div className="lg:col-span-2 p-5 rounded-xl bg-[#0c1220] border border-white/[0.08] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-semibold text-white tracking-tight">
-                Recent Investigations
+                Recent Investigations ({currentDataset.cases.length})
               </h3>
               <p className="text-xs text-slate-400">Active cases under multi-agent review</p>
             </div>
@@ -199,7 +247,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
               onClick={() => onNavigate('investigation')}
               className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1"
             >
-              <span>All Cases</span>
+              <span>Workspace</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -210,13 +258,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
                 <tr className="border-b border-white/[0.08] text-slate-400 text-[11px] font-medium">
                   <th className="pb-2.5 pl-1 font-mono">Case ID</th>
                   <th className="pb-2.5">Title</th>
+                  <th className="pb-2.5">Target</th>
+                  <th className="pb-2.5">Volume</th>
                   <th className="pb-2.5">Risk</th>
-                  <th className="pb-2.5">Status</th>
                   <th className="pb-2.5 pr-1 text-right">Updated</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {casesList.slice(0, 3).map((item) => (
+                {currentDataset.cases.map((item) => (
                   <tr
                     key={item.id}
                     onClick={() => onOpenCase(item.id)}
@@ -226,26 +275,15 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onNavigate, onOpen
                       {item.id}
                     </td>
                     <td className="py-3 font-medium text-slate-200">{item.title}</td>
-                    <td className="py-3">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                          item.riskLevel === 'high'
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        }`}
-                      >
-                        {item.riskLevel === 'high' ? 'High' : 'Medium'}
-                      </span>
+                    <td className="py-3 font-mono text-slate-400 text-[11px]">
+                      {item.targetAccount.length > 20
+                        ? `${item.targetAccount.substring(0, 18)}...`
+                        : item.targetAccount}
                     </td>
+                    <td className="py-3 font-mono font-bold text-slate-200">{item.totalVolume}</td>
                     <td className="py-3">
-                      <span
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                          item.status === 'in_progress'
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                            : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        }`}
-                      >
-                        {item.status === 'in_progress' ? 'In Progress' : 'Review'}
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                        {item.riskScore}
                       </span>
                     </td>
                     <td className="py-3 pr-1 text-right text-slate-400 font-mono text-[11px]">
