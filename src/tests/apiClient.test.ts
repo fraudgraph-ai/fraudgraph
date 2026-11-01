@@ -85,4 +85,9 @@ describe('FraudGraphApiClient Unit Tests', () => {
     expect(res?.sha256_hash.length).toBe(64);
     expect(res?.status).toBe('Verified & Merkle-Anchored');
   });
+
+  it('generates valid Server-Sent Events (SSE) streaming URL', () => {
+    const url = apiClient.getInvestigationStreamUrl('FG-8421', 'TR-90421073', 'ibm_amlsim_500k');
+    expect(url).toBe('/api/v1/investigations/stream/FG-8421?entity_id=TR-90421073&dataset=ibm_amlsim_500k');
+  });
 });

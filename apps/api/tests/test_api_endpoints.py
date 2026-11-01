@@ -74,6 +74,19 @@ def test_run_investigation_api(client):
     assert data["case_id"] == "FG-8421"
     assert len(data["execution_steps"]) >= 5
 
+def test_stream_investigation_api(client):
+    res = client.get("/api/v1/investigations/stream/FG-8421?entity_id=TR-90421073")
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    body = res.text
+    assert "event: AGENT_STARTED" in body
+    assert "event: TOOL_CALL" in body
+    assert "event: EVIDENCE_FOUND" in body
+    assert "event: CRITIC_CHALLENGE" in body
+    assert "event: SCORE_UPDATED" in body
+    assert "event: AGENT_COMPLETED" in body
+    assert "johnson_cycle_detector" in body
+
 def test_evidence_deposit_api(client):
     payload = {
         "case_id": "FG-8421",

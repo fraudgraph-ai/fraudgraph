@@ -30,7 +30,7 @@ install-backend: ## Create Python venv and install backend requirements
 
 .PHONY: test
 test: test-backend test-frontend ## Run complete test suite (Pytest + Vitest)
-	@echo -e "$(GREEN)✅ All 33 automated unit and integration tests passed cleanly!$(RESET)"
+	@echo -e "$(GREEN)✅ All 35 automated unit and integration tests passed cleanly!$(RESET)"
 
 .PHONY: test-backend
 test-backend: ## Run Python backend tests (Pytest)

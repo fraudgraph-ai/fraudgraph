@@ -164,6 +164,10 @@ class FraudGraphApiClient {
     }
   }
 
+  getInvestigationStreamUrl(caseId: string, entityId: string = 'ACC-849201', dataset: string = 'ibm_amlsim_500k'): string {
+    return `${this.baseUrl}/investigations/stream/${encodeURIComponent(caseId)}?entity_id=${encodeURIComponent(entityId)}&dataset=${encodeURIComponent(dataset)}`;
+  }
+
   async verifyHash(sha256Hash: string): Promise<any | null> {
     try {
       const res = await fetch(`${this.baseUrl}/evidence/verify`, {
