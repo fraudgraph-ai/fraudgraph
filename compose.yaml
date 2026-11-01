@@ -9,7 +9,8 @@ services:
     environment:
       - NODE_ENV=production
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
   # Backend Intelligence API
@@ -32,6 +33,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # Graph Database

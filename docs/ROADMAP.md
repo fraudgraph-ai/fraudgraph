@@ -11,23 +11,35 @@ gantt
     title FraudGraph AI 24-Week Implementation Roadmap
     dateFormat  YYYY-MM-DD
     section Phase 1: Core Graph
-    Temporal Graph Engine (Neo4j/NX) :active, p1_1, 2025-11-01, 21d
-    LightGBM & Structural Features  :active, p1_2, 2025-11-10, 21d
-    Gate 1 Review                   :milestone, g1, 2025-12-12, 0d
+    Temporal Graph Engine (Neo4j/NX) :done, p1_1, 2025-11-01, 21d
+    LightGBM & Structural Features  :done, p1_2, 2025-11-10, 21d
+    Gate 1 Review                   :milestone, done, g1, 2025-12-12, 0d
     section Phase 2: Multi-Agent
-    Supervisor & Dynamic Routing    :p2_1, 2025-12-15, 21d
-    Evidence Verifier & Risk Critic :p2_2, 2025-12-25, 21d
-    WebSocket / SSE Live Streaming  :p2_3, 2026-01-05, 14d
-    Gate 2 Review                   :milestone, g2, 2026-01-23, 0d
+    Supervisor & Dynamic Routing    :done, p2_1, 2025-12-15, 21d
+    Evidence Verifier & Risk Critic :done, p2_2, 2025-12-25, 21d
+    WebSocket / SSE Live Streaming  :done, p2_3, 2026-01-05, 14d
+    Gate 2 Review                   :milestone, done, g2, 2026-01-23, 0d
     section Phase 3: Explainability
-    Subgraph Extraction & Cycles    :p3_1, 2026-01-26, 21d
-    Cryptographic Evidence Center   :p3_2, 2026-02-09, 21d
-    Gate 3 Review                   :milestone, g3, 2026-03-06, 0d
+    Subgraph Extraction & Cycles    :done, p3_1, 2026-01-26, 21d
+    Cryptographic Evidence Center   :done, p3_2, 2026-02-09, 21d
+    Gate 3 Review                   :milestone, done, g3, 2026-03-06, 0d
     section Phase 4: Production
-    Cross-Dataset Benchmark Suite   :p4_1, 2026-03-09, 21d
-    Playwright E2E Test Suite       :p4_2, 2026-03-20, 14d
-    Gate 4 Final Audit & Release    :milestone, g4, 2026-04-17, 0d
+    Cross-Dataset Benchmark Suite   :done, p4_1, 2026-03-09, 21d
+    Playwright E2E Test Suite       :done, p4_2, 2026-03-20, 14d
+    Gate 4 Final Audit & Release    :milestone, done, g4, 2026-04-17, 0d
 ```
+
+---
+
+## 🏛️ Architecture Decision Records (ADRs)
+
+| ADR | Title | Status | Scope |
+| :--- | :--- | :--- | :--- |
+| **[ADR-001](adr/0001-hybrid-networkx-and-neo4j-dual-engine.md)** | Hybrid NetworkX In-Memory & Neo4j Dual Engine | `Accepted` | Graph Engine |
+| **[ADR-002](adr/0002-dynamic-agent-supervisor-and-budgeting.md)** | Dynamic 36-Agent Supervisor Routing with Budget Constraints | `Accepted` | Agentic AI (RQ-05) |
+| **[ADR-003](adr/0003-anti-hallucination-and-devils-advocate.md)** | Anti-Hallucination Evidence Verifier & Devil's Advocate Protocol | `Accepted` | Agentic AI (RQ-01, RQ-04) |
+| **[ADR-004](adr/0004-cryptographic-sha256-evidence-vault.md)** | Cryptographic SHA-256 Tamper-Evident Evidence Vault & SAR XML Export | `Accepted` | Compliance & Auditing |
+| **[ADR-005](adr/0005-real-time-sse-trace-streaming.md)** | Server-Sent Events (SSE) for Real-Time Multi-Agent Trace Streaming | `Accepted` | Real-Time Streaming |
 
 ---
 
