@@ -141,6 +141,42 @@ class FraudGraphApiClient {
       return null;
     }
   }
+
+  async explainSubgraph(entityId: string = 'TR-90421073', dataset: string = 'ibm_amlsim_500k'): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/graphs/explain?entity_id=${encodeURIComponent(entityId)}&dataset=${encodeURIComponent(dataset)}`, {
+        method: 'POST',
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async fetchSarXml(caseId: string): Promise<string | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/evidence/${caseId}/sar-xml`);
+      if (!res.ok) return null;
+      return await res.text();
+    } catch {
+      return null;
+    }
+  }
+
+  async verifyHash(sha256Hash: string): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/evidence/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sha256_hash: sha256Hash }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const apiClient = new FraudGraphApiClient();

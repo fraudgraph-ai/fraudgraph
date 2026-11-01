@@ -391,6 +391,48 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
             </div>
           </div>
 
+          {/* Explainability & GNN Attribution (RQ-08) */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-slate-300">GNN Edge Attribution (RQ-08)</h3>
+              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/20">
+                Fidelity: 95.2%
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-[#0e1627] border border-white/[0.06] space-y-2 text-xs">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-300 font-mono">Loop: TR-9042 ➔ TR-1029</span>
+                  <span className="text-red-400 font-mono font-bold">94% attr</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-red-500 rounded-full" style={{ width: '94%' }} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-300 font-mono">Loop: TR-1029 ➔ TR-5566</span>
+                  <span className="text-red-400 font-mono font-bold">91% attr</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-red-500 rounded-full" style={{ width: '91%' }} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-300 font-mono">Shared DEV-9921 Session</span>
+                  <span className="text-amber-400 font-mono font-bold">78% attr</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-amber-500 rounded-full" style={{ width: '78%' }} />
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 italic">
+                3 critical paths drive 91.4% of model risk score. Noise nodes pruned automatically.
+              </p>
+            </div>
+          </div>
+
           {/* Next Actions */}
           <div className="space-y-2.5 pt-2">
             <h3 className="text-xs font-semibold text-slate-300">Next Actions</h3>

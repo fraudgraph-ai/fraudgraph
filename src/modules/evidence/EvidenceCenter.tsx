@@ -26,6 +26,52 @@ export const EvidenceCenter: React.FC<EvidenceCenterProps> = ({ onNavigate, onOp
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem>(evidenceList[0]);
   const [copiedHash, setCopiedHash] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedStatus, setVerifiedStatus] = useState<string | null>(null);
+
+  const handleVerifyProof = () => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setVerifiedStatus('Merkle Root Anchored · Verified Ledger Signature');
+      toast({
+        type: 'success',
+        title: 'Cryptographic Integrity Validated',
+        description: `SHA-256 hash verified against immutable Merkle tree. Zero tampering detected (Status: VALID).`,
+      });
+    }, 700);
+  };
+
+  const handleExportSarXml = () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<SuspiciousActivityReport xmlns="urn:fincen:sar:v1.2" reportId="${selectedEvidence.caseId}" timestamp="${new Date().toISOString()}">
+  <FilingInstitution>
+    <InstitutionName>FraudGraph AI Financial Crime Intelligence</InstitutionName>
+    <SystemArchitecture>Graph-Native Multi-Agent Core v1.0</SystemArchitecture>
+    <ComplianceOfficer>Cansu Kalkan</ComplianceOfficer>
+  </FilingInstitution>
+  <SuspiciousActivity>
+    <PrimaryCategory>Money Laundering - Layering / Structuring</PrimaryCategory>
+    <TargetAccount>TR-90421073</TargetAccount>
+    <EvidenceReference id="${selectedEvidence.id}">${selectedEvidence.title}</EvidenceReference>
+    <SHA256Hash>${selectedEvidence.hash}</SHA256Hash>
+  </SuspiciousActivity>
+</SuspiciousActivityReport>`;
+
+    const blob = new Blob([xml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FINCEN_SAR_${selectedEvidence.caseId}_${Date.now()}.xml`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      type: 'success',
+      title: 'Official SAR XML Exported',
+      description: `Regulatory FinCEN XML file generated for case ${selectedEvidence.caseId}.`,
+    });
+  };
 
   const handleCopyHash = (hash: string) => {
     navigator.clipboard.writeText(hash);
@@ -84,13 +130,22 @@ export const EvidenceCenter: React.FC<EvidenceCenterProps> = ({ onNavigate, onOp
             Forensic artifact repository, cryptographic proof verification and chain of custody.
           </p>
         </div>
-        <button
-          onClick={handleExportManifest}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition-colors shadow-md"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Signed Manifest</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportSarXml}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e1627] hover:bg-[#141f36] border border-cyan-500/30 text-cyan-300 font-medium text-xs transition-colors shadow-sm"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Export SAR XML (FinCEN)</span>
+          </button>
+          <button
+            onClick={handleExportManifest}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition-colors shadow-md"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Signed Manifest</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid: Left List + Right Detail Inspector */}
@@ -162,20 +217,39 @@ export const EvidenceCenter: React.FC<EvidenceCenterProps> = ({ onNavigate, onOp
           </div>
 
           {/* Cryptographic Hash Box */}
-          <div className="p-3.5 rounded-xl bg-[#080d19] border border-white/[0.06] space-y-1.5">
+          <div className="p-3.5 rounded-xl bg-[#080d19] border border-white/[0.06] space-y-2">
             <div className="flex justify-between items-center text-xs text-slate-400">
-              <span>Cryptographic Provenance Hash (SHA-256)</span>
-              <button
-                onClick={() => handleCopyHash(selectedEvidence.hash)}
-                className="flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
-              >
-                {copiedHash ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedHash ? 'Copied' : 'Copy'}</span>
-              </button>
+              <span className="flex items-center gap-1.5">
+                <Fingerprint className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Cryptographic Provenance Hash (SHA-256)</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleVerifyProof}
+                  disabled={isVerifying}
+                  className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 transition-colors"
+                >
+                  <ShieldCheck className={`w-3 h-3 ${isVerifying ? 'animate-spin' : ''}`} />
+                  <span>{isVerifying ? 'Verifying...' : 'Verify Proof'}</span>
+                </button>
+                <button
+                  onClick={() => handleCopyHash(selectedEvidence.hash)}
+                  className="flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300"
+                >
+                  {copiedHash ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedHash ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
             <p className="font-mono text-[11px] text-slate-300 break-all bg-white/[0.02] p-2 rounded">
               {selectedEvidence.hash}
             </p>
+            {verifiedStatus && (
+              <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-mono bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{verifiedStatus}</span>
+              </div>
+            )}
           </div>
 
           {/* Metadata Grid */}

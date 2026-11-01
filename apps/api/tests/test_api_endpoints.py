@@ -88,3 +88,30 @@ def test_evidence_deposit_api(client):
     assert "sha256_hash" in data
     assert len(data["sha256_hash"]) == 64
     assert data["status"] == "Verified & Merkle-Anchored"
+
+def test_explain_subgraph_api(client):
+    res = client.post("/api/v1/graphs/explain", params={"entity_id": "TR-90421073", "dataset": "ibm_amlsim_500k"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["center_entity_id"] == "TR-90421073"
+    assert data["critical_edges_count"] >= 1
+    assert "GNN Graph Attention" in data["narrative_explanation"]
+
+def test_sar_xml_export_api(client):
+    res = client.get("/api/v1/evidence/FG-8421/sar-xml")
+    assert res.status_code == 200
+    assert "application/xml" in res.headers["content-type"]
+    text = res.text
+    assert "<SuspiciousActivityReport" in text
+    assert "FG-8421" in text
+    assert "</SuspiciousActivityReport>" in text
+
+def test_verify_evidence_hash_api(client):
+    # Test valid hash seeded in EV-901
+    payload = {"sha256_hash": "b2f6762391082"}
+    res = client.post("/api/v1/evidence/verify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "is_valid" in data
+    assert "merkle_root" in data
+

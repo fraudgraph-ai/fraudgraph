@@ -35,3 +35,8 @@ def calculate_pagerank(dataset: str = "ibm_amlsim_500k"):
         "top_central_entities": rankings[:10],
         "execution_time_ms": exec_ms
     }
+
+@router.post("/explain")
+def explain_subgraph(entity_id: str = "TR-90421073", dataset: str = "ibm_amlsim_500k"):
+    explanation = graph_engine.explain_subgraph(entity_id=entity_id, dataset=dataset)
+    return explanation
