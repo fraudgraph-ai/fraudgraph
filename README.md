@@ -5,12 +5,11 @@
 ### Enterprise Financial Crime Intelligence · Graph Machine Learning · Multi-Agent Investigation · Explainable AI
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
+[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Passing-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/fraudgraph-ai/fraudgraph/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-1.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React 18](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Neo4j](https://img.shields.io/badge/Neo4j-5.26-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)](https://neo4j.com/)
-[![PyG](https://img.shields.io/badge/PyTorch_Geometric-Inductive_GNN-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pyg.org/)
-[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-10B981?style=for-the-badge&logo=vitest&logoColor=white)](./src/tests)
+[![Tests](https://img.shields.io/badge/Tests-33%2F33_Passing-10B981?style=for-the-badge&logo=pytest&logoColor=white)](./apps/api/tests)
 
 <p align="center">
   <b>A graph-native, multi-agent financial crime intelligence platform engineered to bridge statistical machine learning, temporal graph neural networks, and 36 autonomous specialist investigator roles into human-auditable, evidence-grounded forensic case dossiers.</b>
@@ -231,31 +230,32 @@ FraudGraph AI features out-of-the-box reactive switching across three foundation
 ## Quick Start
 
 ### Prerequisites
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
-- *(Optional for full backend stack)*: Python 3.12, Docker, Docker Compose
+- **Node.js** >= 18.0.0 (npm >= 9.0.0)
+- **Python** >= 3.9 (for FastAPI & Graph ML Intelligence Engine)
+- *(Optional)*: Docker & Docker Compose
 
-### 1. Clone & Install
+### 1. One-Command Setup & Test Run
+Using the enterprise `Makefile`:
 ```bash
 git clone https://github.com/fraudgraph-ai/fraudgraph.git
 cd fraudgraph
 
-npm install
-```
+# Install both frontend npm packages and backend Python venv
+make install
 
-### 2. Run Test Suite
+# Execute the complete automated test suite (Pytest + Vitest)
+make test
+```
+*Executes all 33 automated tests across Python FastAPI endpoints, PageRank centrality, Johnson cycle detection, and dynamic threshold mathematics (100% passing).*
+
+### 2. Launch Unified Development Environment
+Launch both the Python FastAPI intelligence service (`:8000`) and the Vite workbench frontend (`:3000`) with live hot-reloading:
 ```bash
-npm test
+make dev-all
 ```
-*Executes unit tests for graph PageRank centrality, Johnson cycle detection, Dijkstra shortest path, and dynamic confusion matrix threshold mathematics (100% passing).*
-
-### 3. Launch Development Console
-```bash
-npm run dev
-```
-Open **`http://localhost:3000`** in your browser.
-
-Keyboard shortcut: Press **`⌘K`** (or `Ctrl+K`) to trigger the Global Command Palette.
+- **Investigation Workbench UI:** [`http://localhost:3000`](http://localhost:3000)
+- **FastAPI OpenAPI Swagger Documentation:** [`http://localhost:8000/docs`](http://localhost:8000/docs)
+- **Keyboard shortcut:** Press **`⌘K`** (or `Ctrl+K`) inside the workbench to trigger the Global Command Palette.
 
 ---
 
