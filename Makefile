@@ -42,6 +42,12 @@ test-frontend: ## Run frontend unit tests (Vitest)
 	@echo -e "$(CYAN)Running frontend unit tests...$(RESET)"
 	npm test -- --run
 
+.PHONY: test-e2e
+test-e2e: ## Run Playwright end-to-end browser automation tests
+	@echo -e "$(CYAN)Executing Playwright E2E browser tests...$(RESET)"
+	npm run test:e2e
+
+
 .PHONY: build
 build: ## Verify TypeScript types and compile production Vite bundle
 	@echo -e "$(CYAN)Compiling frontend distribution...$(RESET)"
