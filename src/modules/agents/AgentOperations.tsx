@@ -16,12 +16,14 @@ import {
   Shield,
   FileCheck,
   Terminal,
+  Zap,
 } from 'lucide-react';
 import {
   specialistAgentsCatalog,
   liveExecutions,
 } from '../../data/mockData';
 import { AgentDomain, SpecialistAgent, NavigationModule } from '../../types';
+import { useToast } from '../../components/ui/Toast';
 
 interface AgentOperationsProps {
   onNavigate: (module: NavigationModule) => void;
@@ -29,10 +31,66 @@ interface AgentOperationsProps {
 }
 
 export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, onOpenCase }) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'registry' | 'executions' | 'orchestration' | 'traces'>('overview');
   const [domainFilter, setDomainFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedAgent, setSelectedAgent] = useState<SpecialistAgent | null>(null);
+  const [executionsList, setExecutionsList] = useState(liveExecutions);
+  const [selectedExecution, setSelectedExecution] = useState(liveExecutions[0]);
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [activePipelineStep, setActivePipelineStep] = useState<number | null>(null);
+
+  const handleTriggerLiveRun = () => {
+    setIsDispatching(true);
+    setActivePipelineStep(1);
+    toast({
+      type: 'info',
+      title: 'Supervisor Agent Dispatched',
+      description: 'Evaluating case FG-8421 typology and allocating specialist budget (RQ-05)...',
+    });
+
+    setTimeout(() => setActivePipelineStep(2), 600);
+    setTimeout(() => setActivePipelineStep(3), 1200);
+    setTimeout(() => setActivePipelineStep(4), 1800);
+    setTimeout(() => setActivePipelineStep(5), 2400);
+
+    setTimeout(() => {
+      setIsDispatching(false);
+      setActivePipelineStep(null);
+
+      const newExec = {
+        id: `EX-${Math.floor(10000 + Math.random() * 90000)}`,
+        caseId: 'FG-8421',
+        triggeredBy: 'Supervisor (Dynamic DAG)',
+        status: 'completed' as const,
+        agentsInvolved: 6,
+        duration: '2.8s',
+        startedAt: 'Just now',
+        completedAt: 'Just now',
+        tokenCount: 42100,
+        cost: '$0.24',
+        steps: [
+          { stepNumber: 1, agentId: 'A-01', agentName: 'Supervisor', action: 'Decomposed alert into 4 investigative sub-tasks', durationMs: 280, toolUsed: 'task_planner', status: 'success' as const },
+          { stepNumber: 2, agentId: 'B-08', agentName: 'Circular Routing', action: 'Identified ₺7.43M closed transfer loop across 3 accounts', durationMs: 440, toolUsed: 'johnson_cycle_detector', status: 'success' as const },
+          { stepNumber: 3, agentId: 'C-14', agentName: 'Device Auditor', action: 'Flagged hardware collision on DEV-9921', durationMs: 310, toolUsed: 'device_fingerprint_lookup', status: 'success' as const },
+          { stepNumber: 4, agentId: 'E-26', agentName: 'Risk Critic', action: 'Formulated counter-hypothesis for commercial invoice batching (Refuted: Sub-15m hops)', durationMs: 520, toolUsed: 'counter_evidence_evaluator', status: 'success' as const },
+          { stepNumber: 5, agentId: 'E-25', agentName: 'Evidence Verifier', action: 'Audited all 4 claims against graph edges (0 hallucinations detected)', durationMs: 380, toolUsed: 'sha256_merkle_verifier', status: 'success' as const },
+          { stepNumber: 6, agentId: 'F-31', agentName: 'Dossier Composer', action: 'Compiled forensic case file with SAR recommendations', durationMs: 410, toolUsed: 'dossier_generator', status: 'success' as const },
+        ],
+      };
+
+      setExecutionsList((prev) => [newExec, ...prev]);
+      setSelectedExecution(newExec);
+      setActiveTab('traces');
+
+      toast({
+        type: 'success',
+        title: 'Multi-Agent Investigation Completed',
+        description: `Run ${newExec.id} finalized in 2.8s. 0 hallucinated citations (RQ-01, RQ-04 verified).`,
+      });
+    }, 2800);
+  };
 
   const filteredAgents = specialistAgentsCatalog.filter((agent) => {
     if (domainFilter !== 'all' && agent.domain !== domainFilter) return false;
@@ -59,9 +117,19 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
             Multi-agent orchestration, execution monitoring and performance analytics.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-[#0c1220] px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs text-slate-300">
-          <Clock className="w-3.5 h-3.5 text-slate-400" />
-          <span>Last 24 Hours</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleTriggerLiveRun}
+            disabled={isDispatching}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-md shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50"
+          >
+            <Zap className={`w-3.5 h-3.5 fill-white text-white ${isDispatching ? 'animate-bounce' : ''}`} />
+            <span>{isDispatching ? 'Orchestrating Agents...' : 'Trigger Live Agent Run'}</span>
+          </button>
+          <div className="flex items-center gap-2 bg-[#0c1220] px-3 py-1.5 rounded-lg border border-white/[0.08] text-xs text-slate-300">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Last 24 Hours</span>
+          </div>
         </div>
       </div>
 
@@ -157,7 +225,11 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
               {/* Horizontal Pipeline Steps */}
               <div className="p-4 rounded-xl bg-[#080d19] border border-white/[0.06] flex flex-wrap md:flex-nowrap items-center justify-between gap-2 overflow-x-auto text-xs">
                 {/* Step 1: Supervisor */}
-                <div className="flex-1 min-w-[120px] p-2.5 rounded-lg bg-blue-950/40 border border-blue-500/40 text-center shadow-lg">
+                <div className={`flex-1 min-w-[120px] p-2.5 rounded-lg border text-center shadow-lg transition-all ${
+                  activePipelineStep === 1
+                    ? 'bg-blue-600/30 border-blue-400 ring-2 ring-blue-400 animate-pulse'
+                    : 'bg-blue-950/40 border-blue-500/40'
+                }`}>
                   <span className="text-[10px] font-mono text-cyan-400 block font-semibold">
                     A01 Root
                   </span>
@@ -170,7 +242,11 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                 <span className="text-slate-600 font-mono">➔</span>
 
                 {/* Step 2: Planning */}
-                <div className="flex-1 min-w-[120px] p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/40 text-center shadow-lg">
+                <div className={`flex-1 min-w-[120px] p-2.5 rounded-lg border text-center shadow-lg transition-all ${
+                  activePipelineStep === 2
+                    ? 'bg-indigo-600/30 border-indigo-400 ring-2 ring-indigo-400 animate-pulse'
+                    : 'bg-indigo-950/40 border-indigo-500/40'
+                }`}>
                   <span className="text-[10px] font-mono text-indigo-300 block font-semibold">
                     A02-A03
                   </span>
@@ -183,7 +259,11 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                 <span className="text-slate-600 font-mono">➔</span>
 
                 {/* Step 3: Specialists */}
-                <div className="flex-1 min-w-[120px] p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-center shadow-lg ring-1 ring-cyan-400">
+                <div className={`flex-1 min-w-[120px] p-2.5 rounded-lg border text-center shadow-lg ring-1 ring-cyan-400 transition-all ${
+                  activePipelineStep === 3
+                    ? 'bg-cyan-600/30 border-cyan-400 ring-2 ring-cyan-400 animate-pulse'
+                    : 'bg-cyan-950/40 border-cyan-500/40'
+                }`}>
                   <span className="text-[10px] font-mono text-cyan-300 block font-semibold">
                     Groups B & C
                   </span>
@@ -196,7 +276,11 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                 <span className="text-slate-600 font-mono">➔</span>
 
                 {/* Step 4: Evidence Verifier */}
-                <div className="flex-1 min-w-[120px] p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-center shadow-lg">
+                <div className={`flex-1 min-w-[120px] p-2.5 rounded-lg border text-center shadow-lg transition-all ${
+                  activePipelineStep === 4
+                    ? 'bg-emerald-600/30 border-emerald-400 ring-2 ring-emerald-400 animate-pulse'
+                    : 'bg-emerald-950/40 border-emerald-500/40'
+                }`}>
                   <span className="text-[10px] font-mono text-emerald-400 block font-semibold">
                     D22-D26
                   </span>
@@ -209,7 +293,11 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                 <span className="text-slate-600 font-mono">➔</span>
 
                 {/* Step 5: Report Output */}
-                <div className="flex-1 min-w-[120px] p-2.5 rounded-lg bg-purple-950/40 border border-purple-500/40 text-center shadow-lg">
+                <div className={`flex-1 min-w-[120px] p-2.5 rounded-lg border text-center shadow-lg transition-all ${
+                  activePipelineStep === 5
+                    ? 'bg-purple-600/30 border-purple-400 ring-2 ring-purple-400 animate-pulse'
+                    : 'bg-purple-950/40 border-purple-500/40'
+                }`}>
                   <span className="text-[10px] font-mono text-purple-300 block font-semibold">
                     F33 Dossier
                   </span>
@@ -229,10 +317,12 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                     Live Executions
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Real-time concurrent agent investigation runs
+                    Real-time concurrent agent investigation runs (click row to inspect traces)
                   </p>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono">3 Active Runs</span>
+                <span className="text-[11px] text-slate-400 font-mono font-medium">
+                  {executionsList.length} Runs Logged
+                </span>
               </div>
 
               <div className="overflow-x-auto">
@@ -248,11 +338,14 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.04]">
-                    {liveExecutions.map((exec) => (
+                    {executionsList.map((exec) => (
                       <tr
                         key={exec.id}
-                        onClick={() => onOpenCase(exec.caseId)}
-                        className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                        onClick={() => {
+                          setSelectedExecution(exec);
+                          setActiveTab('traces');
+                        }}
+                        className="hover:bg-white/[0.04] cursor-pointer transition-colors"
                       >
                         <td className="py-3 pl-1 font-mono font-semibold text-cyan-300">
                           {exec.id}
@@ -510,16 +603,20 @@ export const AgentOperations: React.FC<AgentOperationsProps> = ({ onNavigate, on
           <div className="p-4 rounded-xl bg-[#0c1220] border border-white/[0.08] space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-white">Execution Trace: EX-91042</h3>
-                <p className="text-xs text-slate-400 font-mono">Case FG-8421 · Token Cost: $0.28 (48.2K tokens)</p>
+                <h3 className="text-sm font-semibold text-white">Execution Trace: {selectedExecution.id}</h3>
+                <p className="text-xs text-slate-400 font-mono">Case {selectedExecution.caseId} · Duration: {selectedExecution.duration} · Triggered By: {selectedExecution.triggeredBy}</p>
               </div>
-              <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                Active Execution
+              <span className={`text-xs font-mono px-2 py-0.5 rounded ${
+                selectedExecution.status === 'running'
+                  ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30'
+                  : 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30'
+              }`}>
+                {selectedExecution.status === 'running' ? 'Active Execution' : 'Completed Trace'}
               </span>
             </div>
 
             <div className="space-y-2 font-mono text-xs">
-              {liveExecutions[0].steps.map((st) => (
+              {selectedExecution.steps.map((st) => (
                 <div key={st.stepNumber} className="p-2.5 rounded bg-[#080d19] border border-white/[0.04] flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-slate-500">#{st.stepNumber}</span>
