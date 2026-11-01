@@ -115,3 +115,20 @@ def test_verify_evidence_hash_api(client):
     assert "is_valid" in data
     assert "merkle_root" in data
 
+def test_benchmark_leaderboard_api(client):
+    res = client.get("/api/v1/benchmarks/leaderboard")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 5
+    champion = next(m for m in data if m["status"] == "champion")
+    assert champion["amlsim_prauc"] > 0.90
+
+def test_run_benchmark_suite_api(client):
+    res = client.post("/api/v1/benchmarks/run")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["benchmark_status"] == "COMPLETED"
+    assert "PR-AUC" in data["empirical_lift_vs_tabular"]
+    assert len(data["datasets_evaluated"]) == 3
+
+
