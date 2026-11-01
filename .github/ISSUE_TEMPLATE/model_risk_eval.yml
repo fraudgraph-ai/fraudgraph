@@ -1,0 +1,48 @@
+name: "🔬 Model Evaluation / Benchmark Anomaly"
+description: "Report metric degradation, calibration drift, or benchmark divergence in GNN / ML models"
+title: "[Model Eval]: "
+labels: ["kind/research-rq", "area/detection-ml"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for reporting benchmark anomalies, false positive spikes, calibration drift (Brier Score degradation), or GNN over-smoothing issues.
+  - type: dropdown
+    id: dataset
+    attributes:
+      label: Target Dataset
+      options:
+        - "IBM AMLSim (500K Synthetic Financial Transactions)"
+        - "Elliptic++ (Bitcoin On-Chain Forensics)"
+        - "TransXion (Temporal AML Benchmark)"
+        - "Custom / In-House Dataset"
+    validations:
+      required: true
+  - type: dropdown
+    id: model_family
+    attributes:
+      label: Model Architecture
+      options:
+        - "LightGBM + Structural Graph Features (IBM Preprocessor)"
+        - "Graph Convolutional Network (GCN)"
+        - "Graph Attention Network (GAT / GATv2)"
+        - "Temporal Graph Network (TGN)"
+        - "Rule Engine / Baseline Heuristic"
+        - "Calibrated Ensemble"
+    validations:
+      required: true
+  - type: textarea
+    id: metrics_observed
+    attributes:
+      label: Observed vs Expected Metrics
+      description: Provide PR-AUC, ROC-AUC, Recall@K, Brier Score, or ECE (Expected Calibration Error).
+      placeholder: |
+        Expected PR-AUC: ≥ 0.82
+        Observed PR-AUC: 0.71 (Spike in false positive clusters on hub accounts)
+    validations:
+      required: true
+  - type: textarea
+    id: root_cause_hypothesis
+    attributes:
+      label: Root Cause Hypothesis / Graph Topology Findings
+      description: Did degree skew, entity resolution collision, or temporal leakage cause the divergence?

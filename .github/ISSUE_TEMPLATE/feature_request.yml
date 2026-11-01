@@ -1,0 +1,51 @@
+name: "💡 Feature Proposal"
+description: "Propose a new capability, algorithmic enhancement, or agent role for FraudGraph AI"
+title: "[Feature]: "
+labels: ["kind/feature", "status/triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome architectural proposals, new detection strategies, and multi-agent roles.
+        Please review `docs/PRD.md` and `docs/ARCHITECTURE.md` before submitting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: Is your feature request related to a specific operational bottleneck or research gap?
+      placeholder: "Financial analysts currently lack automated counter-evidence scoring when evaluating smurfing clusters..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution & Technical Design
+      description: Describe your proposed approach, architectural touchpoints, and algorithms.
+      placeholder: "Introduce an independent CounterEvidenceAgent (Role E-26) with automated Benford's law anomaly checks..."
+    validations:
+      required: true
+  - type: dropdown
+    id: target_milestone
+    attributes:
+      label: Architectural Milestone Alignment
+      options:
+        - "Phase 1: Foundations & Core Graph Engine (Weeks 1–6)"
+        - "Phase 2: Multi-Agent Orchestration Engine (Weeks 7–12)"
+        - "Phase 3: Explainability & Case Management (Weeks 13–18)"
+        - "Phase 4: Enterprise Production Hardening & Benchmarking (Weeks 19–24)"
+        - "Future Exploration / Research R&D"
+    validations:
+      required: true
+  - type: checkboxes
+    id: research_questions
+    attributes:
+      label: Relevant Research Questions (PRD Alignment)
+      options:
+        - label: "RQ-01: Multi-Agent vs Single-LLM Evidence Accuracy"
+        - label: "RQ-02: Hybrid Tabular + Graph + GNN PR-AUC Improvements"
+        - label: "RQ-03: Temporal Graph Analysis for Early Warning"
+        - label: "RQ-04: Independent Critic & Evidence Verification"
+        - label: "RQ-05: Dynamic Routing Cost & Latency Reduction"
+        - label: "RQ-06: Uncertainty Calibration for Human Review"
+        - label: "RQ-07: Cross-Dataset Synthetic Generalization"
+        - label: "RQ-08: Subgraph Selection & Human Interpretability"

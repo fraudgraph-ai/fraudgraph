@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "FraudGraph AI PRD & Architecture Documentation"
+    url: "https://github.com/fraudgraph-ai/fraudgraph/tree/main/docs"
+    about: "Explore the comprehensive 6-layer architecture, 36-agent catalog, and 24-week roadmap."
+  - name: "Security & Vulnerability Disclosure"
+    url: "https://github.com/fraudgraph-ai/fraudgraph/blob/main/SECURITY.md"
+    about: "Report vulnerabilities privately under our responsible disclosure policy."

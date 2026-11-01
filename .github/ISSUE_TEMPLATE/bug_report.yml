@@ -1,0 +1,70 @@
+name: "🐛 Bug Report"
+description: "Report a reproducible defect, UI malfunction, or calculation error in FraudGraph AI"
+title: "[Bug]: "
+labels: ["kind/bug", "status/triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please check existing issues before submitting.
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected Module / Layer
+      description: Which part of FraudGraph AI does this bug affect?
+      options:
+        - "Layer 1: Data Ingestion (AMLSim / Elliptic / TransXion)"
+        - "Layer 2: Graph Processing & Entity Resolution"
+        - "Layer 3: Detection & Risk Intelligence (LightGBM / GNN)"
+        - "Layer 4: Multi-Agent Orchestration (Supervisor / Specialists)"
+        - "Layer 5: Case Management & Audit Trail"
+        - "Layer 6: Investigation Workbench / Frontend UI"
+        - "Graph Visualizer (Cytoscape / Topologies)"
+        - "Export & Reporting Engine"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "e.g., Circular flow detection fails when transaction graph contains self-loops..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Navigate to 'Graph Explorer'
+        2. Select dataset 'Elliptic++ Bitcoin'
+        3. Set amount filter to '≥ 10 BTC'
+        4. Click 'Run Analysis'
+        5. Observe unexpected node pruning...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      options:
+        - "P0 - Critical (System crash / Security vulnerability / Severe data corruption)"
+        - "P1 - High (Core analysis pipeline broken / Investigation blocked)"
+        - "P2 - Medium (Functional defect with workaround available)"
+        - "P3 - Low (Cosmetic UI issue / Minor typography or styling)"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & Runtime Details
+      description: OS, Node.js version, browser, Python/Neo4j environment (if applicable).
+      placeholder: "OS: macOS Sonoma 14.5 / Browser: Chrome 125 / Node: v24.15.0"
