@@ -55,4 +55,8 @@ echo "   [PASSED] /api/v1/rules/"
 curl -sf -X POST http://127.0.0.1:$PORT/api/v1/rules/RUL-CIRC-01/simulate -H "Content-Type: application/json" -d '{"dataset":"ibm_amlsim_500k","sample_entities_limit":50}' | grep -q '"rule_id":"RUL-CIRC-01"'
 echo "   [PASSED] /api/v1/rules/RUL-CIRC-01/simulate"
 
+echo "🔍 Validating Compliance Four-Eye Audit Ledger Endpoint..."
+curl -sf http://127.0.0.1:$PORT/api/v1/compliance/audit-logs | grep -q "AUD-901"
+echo "   [PASSED] /api/v1/compliance/audit-logs"
+
 echo "🎉 All smoke test endpoints verified successfully!"

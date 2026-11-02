@@ -130,6 +130,29 @@ export interface RuleSimulationResult {
   sample_flagged_entities: string[];
 }
 
+export interface ApiComplianceReview {
+  case_id: string;
+  status: string;
+  disposition: string;
+  lead_analyst: string;
+  compliance_officer?: string | null;
+  primary_signature_sha256: string;
+  secondary_signature_sha256?: string | null;
+  dual_authorized_at?: string | null;
+  sar_filing_unlocked: boolean;
+  message: string;
+}
+
+export interface ApiAuditLog {
+  id: string;
+  timestamp: string;
+  actor: string;
+  action: string;
+  target_id: string;
+  details: string;
+  sha256_hash: string;
+}
+
 class FraudGraphApiClient {
   private baseUrl: string;
 
@@ -342,6 +365,72 @@ class FraudGraphApiClient {
       return await res.json();
     } catch {
       return null;
+    }
+  }
+
+  async submitCaseReview(caseId: string, disposition: string, justification: string, leadAnalyst: string = 'Analyst E. Kaya'): Promise<ApiComplianceReview | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/compliance/reviews/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          case_id: caseId,
+          disposition,
+          justification,
+          lead_analyst: leadAnalyst,
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async approveCaseReview(caseId: string, complianceOfficer: string = 'MLRO S. Demir', notes?: string): Promise<ApiComplianceReview | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/compliance/reviews/${encodeURIComponent(caseId)}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          compliance_officer: complianceOfficer,
+          notes: notes || 'Compliance authorization granted after independent verification.',
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async remandCaseReview(caseId: string, complianceOfficer: string = 'MLRO S. Demir', remandReasons: string = 'Insufficient evidence'): Promise<ApiComplianceReview | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/compliance/reviews/${encodeURIComponent(caseId)}/remand`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          compliance_officer: complianceOfficer,
+          remand_reasons: remandReasons,
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async getAuditLogs(limit: number = 50, search?: string): Promise<ApiAuditLog[]> {
+    try {
+      const params = new URLSearchParams({ limit: limit.toString() });
+      if (search) params.append('search', search);
+
+      const res = await fetch(`${this.baseUrl}/compliance/audit-logs?${params.toString()}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
     }
   }
 }

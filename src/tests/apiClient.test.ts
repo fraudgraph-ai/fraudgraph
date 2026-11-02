@@ -198,4 +198,67 @@ describe('FraudGraphApiClient Unit Tests', () => {
     expect(sim?.rule_hits_count).toBe(3);
     expect(sim?.total_exposure_volume_try).toBeGreaterThan(0);
   });
+
+  it('handles Four-Eye review submission, dual authorization, and audit logs', async () => {
+    const mockSubmit = {
+      case_id: 'FG-8421',
+      status: 'PENDING_COMPLIANCE_SIGNOFF',
+      disposition: 'Escalate for SAR/STR Regulatory Filing',
+      lead_analyst: 'Analyst E. Kaya',
+      primary_signature_sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      sar_filing_unlocked: false,
+      message: 'Case FG-8421 submitted for Four-Eye review.',
+    };
+
+    const mockApprove = {
+      case_id: 'FG-8421',
+      status: 'DUAL_AUTHORIZED_FOR_REGULATORY_SUBMISSION',
+      disposition: 'Escalate for SAR/STR Regulatory Filing',
+      lead_analyst: 'Analyst E. Kaya',
+      compliance_officer: 'MLRO S. Demir',
+      primary_signature_sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      secondary_signature_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      sar_filing_unlocked: true,
+      message: 'Four-Eye Dual Authorization completed.',
+    };
+
+    const mockLogs = [
+      {
+        id: 'AUD-901',
+        timestamp: '2026-03-29 14:22:15',
+        actor: 'MLRO S. Demir',
+        action: 'FOUR_EYE_DUAL_AUTHORIZED',
+        target_id: 'FG-8421',
+        details: 'Signed secondary authorization',
+        sha256_hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      },
+    ];
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSubmit,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockApprove,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockLogs,
+      } as Response);
+
+    const sub = await apiClient.submitCaseReview('FG-8421', 'Escalate for SAR/STR Regulatory Filing', 'Proof of funds layering');
+    expect(sub?.status).toBe('PENDING_COMPLIANCE_SIGNOFF');
+    expect(sub?.sar_filing_unlocked).toBe(false);
+
+    const app = await apiClient.approveCaseReview('FG-8421', 'MLRO S. Demir');
+    expect(app?.status).toBe('DUAL_AUTHORIZED_FOR_REGULATORY_SUBMISSION');
+    expect(app?.sar_filing_unlocked).toBe(true);
+
+    const logs = await apiClient.getAuditLogs();
+    expect(logs.length).toBe(1);
+    expect(logs[0].id).toBe('AUD-901');
+  });
 });
