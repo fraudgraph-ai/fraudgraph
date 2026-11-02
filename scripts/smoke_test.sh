@@ -59,4 +59,8 @@ echo "🔍 Validating Compliance Four-Eye Audit Ledger Endpoint..."
 curl -sf http://127.0.0.1:$PORT/api/v1/compliance/audit-logs | grep -q "AUD-901"
 echo "   [PASSED] /api/v1/compliance/audit-logs"
 
+echo "🔍 Validating Real-Time Streaming Telemetry (RQ-03)..."
+curl -sf http://127.0.0.1:$PORT/api/v1/stream/metrics | grep -q "HEALTHY_STREAMING"
+echo "   [PASSED] /api/v1/stream/metrics"
+
 echo "🎉 All smoke test endpoints verified successfully!"

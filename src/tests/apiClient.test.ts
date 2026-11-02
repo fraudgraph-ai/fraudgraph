@@ -261,4 +261,74 @@ describe('FraudGraphApiClient Unit Tests', () => {
     expect(logs.length).toBe(1);
     expect(logs[0].id).toBe('AUD-901');
   });
+
+  it('interacts with real-time streaming ingestion and burst simulation endpoints', async () => {
+    const mockMetrics = {
+      status: 'HEALTHY_STREAMING',
+      total_events_processed: 184500,
+      current_throughput_tx_sec: 28500.0,
+      buffer_depth: 340,
+      max_buffer_capacity: 50000,
+      average_ingest_latency_ms: 0.85,
+      alerts_emitted_total: 28,
+      memory_footprint_mb: 48.6,
+      connected_consumers_count: 4,
+    };
+
+    const mockIngest = {
+      batch_id: 'BATCH-882193',
+      events_ingested: 1,
+      nodes_added_or_updated: 2,
+      edges_added: 1,
+      alerts_generated_count: 1,
+      latency_ms: 0.94,
+      throughput_tx_sec: 1063.8,
+      status: 'INGESTED_AND_GRAPH_SYNCHRONIZED',
+    };
+
+    const mockBurst = {
+      simulation_id: 'SIM-BURST-100',
+      burst_size: 500,
+      ingest_duration_seconds: 0.045,
+      throughput_tx_sec: 11111.1,
+      alerts_triggered: 3,
+      critical_cycles_detected: 1,
+      status: 'COMPLETED_STRESS_BENCHMARK',
+    };
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockMetrics,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIngest,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockBurst,
+      } as Response);
+
+    const metrics = await apiClient.getStreamMetrics();
+    expect(metrics).not.toBeNull();
+    expect(metrics?.status).toBe('HEALTHY_STREAMING');
+    expect(metrics?.total_events_processed).toBe(184500);
+
+    const ingestRes = await apiClient.ingestTransactionStream([
+      {
+        event_id: 'EVT-TEST',
+        source_account: 'TR-ACC-1',
+        target_account: 'TR-ACC-2',
+        amount: 5500000,
+      },
+    ]);
+    expect(ingestRes?.batch_id).toBe('BATCH-882193');
+    expect(ingestRes?.edges_added).toBe(1);
+
+    const burstRes = await apiClient.simulateStreamBurst(500, true);
+    expect(burstRes?.critical_cycles_detected).toBe(1);
+    expect(burstRes?.status).toBe('COMPLETED_STRESS_BENCHMARK');
+  });
 });

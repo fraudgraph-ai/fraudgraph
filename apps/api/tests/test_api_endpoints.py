@@ -265,7 +265,51 @@ def test_get_compliance_audit_logs_api(client):
     assert len(data) >= 3
     assert all("sha256_hash" in l for l in data)
 
+def test_stream_metrics_api(client):
+    res = client.get("/api/v1/stream/metrics")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "HEALTHY_STREAMING"
+    assert data["total_events_processed"] > 0
+    assert data["current_throughput_tx_sec"] > 0
+    assert "average_ingest_latency_ms" in data
+    assert data["connected_consumers_count"] >= 1
 
+def test_stream_ingest_api(client):
+    payload = {
+        "events": [
+            {
+                "event_id": "TEST-STREAM-001",
+                "source_account": "ACC-STREAM-ORIGIN",
+                "target_account": "ACC-STREAM-TARGET",
+                "amount": 7500000.0,
+                "currency": "TRY",
+                "channel": "FAST Instant"
+            }
+        ],
+        "dataset_target": "ibm_amlsim_500k",
+        "evaluate_rules": True
+    }
+    res = client.post("/api/v1/stream/ingest", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["events_ingested"] == 1
+    assert data["nodes_added_or_updated"] == 2
+    assert data["edges_added"] == 1
+    assert data["alerts_generated_count"] >= 1
+    assert data["status"] == "INGESTED_AND_GRAPH_SYNCHRONIZED"
 
-
+def test_stream_simulate_burst_api(client):
+    payload = {
+        "burst_size": 200,
+        "inject_circular_loop": True,
+        "dataset_target": "ibm_amlsim_500k"
+    }
+    res = client.post("/api/v1/stream/simulate-burst", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["burst_size"] == 200
+    assert data["throughput_tx_sec"] > 0
+    assert data["critical_cycles_detected"] == 1
+    assert data["status"] == "COMPLETED_STRESS_BENCHMARK"
 

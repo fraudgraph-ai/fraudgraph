@@ -153,6 +153,50 @@ export interface ApiAuditLog {
   sha256_hash: string;
 }
 
+export interface StreamTransactionEvent {
+  event_id: string;
+  source_account: string;
+  target_account: string;
+  amount: number;
+  currency?: string;
+  channel?: string;
+  timestamp?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface StreamIngestResponse {
+  batch_id: string;
+  events_ingested: number;
+  nodes_added_or_updated: number;
+  edges_added: number;
+  alerts_generated_count: number;
+  latency_ms: number;
+  throughput_tx_sec: number;
+  status: string;
+}
+
+export interface StreamMetricsResponse {
+  status: string;
+  total_events_processed: number;
+  current_throughput_tx_sec: number;
+  buffer_depth: number;
+  max_buffer_capacity: number;
+  average_ingest_latency_ms: number;
+  alerts_emitted_total: number;
+  memory_footprint_mb: number;
+  connected_consumers_count: number;
+}
+
+export interface StreamSimulateBurstResponse {
+  simulation_id: string;
+  burst_size: number;
+  ingest_duration_seconds: number;
+  throughput_tx_sec: number;
+  alerts_triggered: number;
+  critical_cycles_detected: number;
+  status: string;
+}
+
 class FraudGraphApiClient {
   private baseUrl: string;
 
@@ -431,6 +475,60 @@ class FraudGraphApiClient {
       return await res.json();
     } catch {
       return [];
+    }
+  }
+
+  async getStreamMetrics(): Promise<StreamMetricsResponse | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/stream/metrics`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async ingestTransactionStream(
+    events: StreamTransactionEvent[],
+    datasetTarget: string = 'ibm_amlsim_500k',
+    evaluateRules: boolean = true
+  ): Promise<StreamIngestResponse | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/stream/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          events,
+          dataset_target: datasetTarget,
+          evaluate_rules: evaluateRules,
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async simulateStreamBurst(
+    burstSize: number = 1000,
+    injectCircularLoop: boolean = true,
+    datasetTarget: string = 'ibm_amlsim_500k'
+  ): Promise<StreamSimulateBurstResponse | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/stream/simulate-burst`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          burst_size: burstSize,
+          inject_circular_loop: injectCircularLoop,
+          dataset_target: datasetTarget,
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
     }
   }
 }
