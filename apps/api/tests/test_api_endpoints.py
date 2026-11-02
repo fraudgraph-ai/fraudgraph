@@ -172,5 +172,52 @@ def test_list_transactions_api(client):
     assert len(data) >= 3
     assert all(t["amount"] >= 1000000 for t in data)
 
+def test_list_rules_api(client):
+    res = client.get("/api/v1/rules/")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 4
+    rule_ids = [r["id"] for r in data]
+    assert "RUL-CIRC-01" in rule_ids
+
+def test_create_rule_api(client):
+    payload = {
+        "name": "Custom Peeling Chain Detector",
+        "typology": "peeling_chain",
+        "description": "Custom rule detecting rapid split peels",
+        "severity": "High",
+        "parameters": {"min_hops": 5, "min_amount": 250000.0},
+        "is_active": True
+    }
+    res = client.post("/api/v1/rules/", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "RUL-CUSTOM-" in data["id"]
+    assert data["name"] == "Custom Peeling Chain Detector"
+
+def test_toggle_rule_api(client):
+    res = client.patch("/api/v1/rules/RUL-CIRC-01/toggle")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["id"] == "RUL-CIRC-01"
+    # toggle back to active
+    res2 = client.patch("/api/v1/rules/RUL-CIRC-01/toggle")
+    assert res2.status_code == 200
+    assert res2.json()["is_active"] is True
+
+def test_simulate_rule_api(client):
+    payload = {
+        "dataset": "ibm_amlsim_500k",
+        "sample_entities_limit": 100
+    }
+    res = client.post("/api/v1/rules/RUL-CIRC-01/simulate", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["rule_id"] == "RUL-CIRC-01"
+    assert data["rule_hits_count"] >= 1
+    assert data["hit_rate_percentage"] > 0
+    assert data["total_exposure_volume_try"] > 0
+
+
 
 

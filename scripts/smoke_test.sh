@@ -49,4 +49,10 @@ echo "🔍 Validating Transaction Intelligence Feed Endpoint..."
 curl -sf "http://127.0.0.1:$PORT/api/v1/transactions/?min_amount=1000000" | grep -q "TX-901842"
 echo "   [PASSED] /api/v1/transactions/"
 
+echo "🔍 Validating AML Rule Studio & Simulation Endpoints (RQ-06)..."
+curl -sf http://127.0.0.1:$PORT/api/v1/rules/ | grep -q "RUL-CIRC-01"
+echo "   [PASSED] /api/v1/rules/"
+curl -sf -X POST http://127.0.0.1:$PORT/api/v1/rules/RUL-CIRC-01/simulate -H "Content-Type: application/json" -d '{"dataset":"ibm_amlsim_500k","sample_entities_limit":50}' | grep -q '"rule_id":"RUL-CIRC-01"'
+echo "   [PASSED] /api/v1/rules/RUL-CIRC-01/simulate"
+
 echo "🎉 All smoke test endpoints verified successfully!"

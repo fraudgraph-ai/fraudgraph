@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-1.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React 18](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Tests](https://img.shields.io/badge/Tests-41%2F41_Passing-10B981?style=for-the-badge&logo=pytest&logoColor=white)](./apps/api/tests)
+[![Tests](https://img.shields.io/badge/Tests-46%2F46_Passing-10B981?style=for-the-badge&logo=pytest&logoColor=white)](./apps/api/tests)
 
 <p align="center">
   <b>A graph-native, multi-agent financial crime intelligence platform engineered to bridge statistical machine learning, temporal graph neural networks, and 36 autonomous specialist investigator roles into human-auditable, evidence-grounded forensic case dossiers.</b>

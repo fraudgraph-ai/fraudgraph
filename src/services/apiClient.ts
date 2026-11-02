@@ -105,6 +105,31 @@ export interface ApiTransactionItem {
   risk_score: number;
 }
 
+export interface ApiRuleDefinition {
+  id: string;
+  name: string;
+  typology: string;
+  description: string;
+  severity: string;
+  parameters: Record<string, any>;
+  is_active: boolean;
+  created_by: string;
+  last_tuned: string;
+}
+
+export interface RuleSimulationResult {
+  rule_id: string;
+  rule_name: string;
+  dataset: string;
+  simulated_entities_count: number;
+  rule_hits_count: number;
+  hit_rate_percentage: number;
+  total_exposure_volume_try: number;
+  estimated_false_positive_rate: number;
+  execution_time_ms: number;
+  sample_flagged_entities: string[];
+}
+
 class FraudGraphApiClient {
   private baseUrl: string;
 
@@ -263,6 +288,60 @@ class FraudGraphApiClient {
       return await res.json();
     } catch {
       return [];
+    }
+  }
+
+  async getRules(typology?: string, isActive?: boolean): Promise<ApiRuleDefinition[]> {
+    try {
+      const params = new URLSearchParams();
+      if (typology && typology !== 'all') params.append('typology', typology);
+      if (isActive !== undefined) params.append('is_active', isActive.toString());
+
+      const res = await fetch(`${this.baseUrl}/rules/?${params.toString()}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  async createRule(payload: { name: string; typology: string; description: string; severity?: string; parameters: Record<string, any>; is_active?: boolean }): Promise<ApiRuleDefinition | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/rules/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async toggleRule(ruleId: string): Promise<ApiRuleDefinition | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/rules/${encodeURIComponent(ruleId)}/toggle`, {
+        method: 'PATCH',
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async simulateRule(ruleId: string, dataset: string = 'ibm_amlsim_500k', sampleLimit: number = 100): Promise<RuleSimulationResult | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/rules/${encodeURIComponent(ruleId)}/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataset, sample_entities_limit: sampleLimit }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
     }
   }
 }
