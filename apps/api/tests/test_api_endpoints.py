@@ -218,6 +218,54 @@ def test_simulate_rule_api(client):
     assert data["hit_rate_percentage"] > 0
     assert data["total_exposure_volume_try"] > 0
 
+def test_submit_case_review_api(client):
+    payload = {
+        "case_id": "FG-8421",
+        "disposition": "Escalate for SAR/STR Regulatory Filing",
+        "justification": "Confirmed multi-hop circular funds layering across 3 entities",
+        "lead_analyst": "Analyst E. Kaya"
+    }
+    res = client.post("/api/v1/compliance/reviews/submit", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["case_id"] == "FG-8421"
+    assert data["status"] == "PENDING_COMPLIANCE_SIGNOFF"
+    assert len(data["primary_signature_sha256"]) == 64
+    assert data["sar_filing_unlocked"] is False
+
+def test_approve_case_review_api(client):
+    payload = {
+        "compliance_officer": "MLRO S. Demir",
+        "notes": "Verified against graph nodes. Approved for FinCEN filing."
+    }
+    res = client.post("/api/v1/compliance/reviews/FG-8421/approve", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["case_id"] == "FG-8421"
+    assert data["status"] == "DUAL_AUTHORIZED_FOR_REGULATORY_SUBMISSION"
+    assert data["sar_filing_unlocked"] is True
+    assert len(data["secondary_signature_sha256"]) == 64
+
+def test_remand_case_review_api(client):
+    payload = {
+        "compliance_officer": "MLRO S. Demir",
+        "remand_reasons": "Need audited proof of IP address geolocation."
+    }
+    res = client.post("/api/v1/compliance/reviews/FG-8419/remand", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["case_id"] == "FG-8419"
+    assert data["status"] == "REMANDED_FOR_EVIDENCE"
+    assert data["sar_filing_unlocked"] is False
+
+def test_get_compliance_audit_logs_api(client):
+    res = client.get("/api/v1/compliance/audit-logs")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 3
+    assert all("sha256_hash" in l for l in data)
+
+
 
 
 
