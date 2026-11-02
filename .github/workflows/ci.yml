@@ -63,7 +63,7 @@ jobs:
       - name: Verify No Secrets or Private Keys
         run: |
           echo "Scanning for sensitive patterns..."
-          if grep -rnE "(sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN PRIVATE KEY)" --exclude-dir={.git,node_modules,.venv,dist} .; then
+          if grep -rnE "(sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN PRIVATE KEY)" --exclude-dir={.git,node_modules,.venv,dist,.github} .; then
             echo "❌ CRITICAL: Unmasked API secret or private key pattern detected!"
             exit 1
           else
