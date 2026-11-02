@@ -6,7 +6,7 @@ Implements Supervisor Dynamic Routing (RQ-05), Evidence Verifier & Risk Critic P
 from typing import Dict, List, Any, Iterator
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 class MultiAgentOrchestrator:
     def __init__(self):
@@ -32,7 +32,7 @@ class MultiAgentOrchestrator:
         evidence verification, and final case closure.
         Adheres to Issue #5 event schema specification.
         """
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         
         # 1. AGENT_STARTED
         yield {

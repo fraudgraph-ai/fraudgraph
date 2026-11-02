@@ -144,4 +144,33 @@ def test_run_benchmark_suite_api(client):
     assert "PR-AUC" in data["empirical_lift_vs_tabular"]
     assert len(data["datasets_evaluated"]) == 3
 
+def test_list_alerts_api(client):
+    res = client.get("/api/v1/alerts/")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 4
+    assert any(a["id"] == "ALT-1094" for a in data)
+
+def test_escalate_alert_api(client):
+    payload = {
+        "alert_id": "ALT-1094",
+        "target_account": "TR-90421073",
+        "analyst_notes": "Rapid dispersion across multiple mule nodes detected",
+        "priority": "High"
+    }
+    res = client.post("/api/v1/alerts/escalate", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["alert_id"] == "ALT-1094"
+    assert "FG-" in data["case_id"]
+    assert len(data["sha256_audit_hash"]) == 64
+
+def test_list_transactions_api(client):
+    res = client.get("/api/v1/transactions/?min_amount=1000000")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 3
+    assert all(t["amount"] >= 1000000 for t in data)
+
+
 

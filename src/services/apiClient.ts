@@ -69,6 +69,42 @@ export interface RiskScoreResponse {
   }>;
 }
 
+export interface ApiAlertItem {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  risk_level: string;
+  risk_score: number;
+  status: string;
+  target_account: string;
+  amount: string;
+  typology: string;
+  rule_or_model: string;
+}
+
+export interface EscalateAlertResponse {
+  alert_id: string;
+  case_id: string;
+  status: string;
+  lead_analyst: string;
+  sha256_audit_hash: string;
+  message: string;
+}
+
+export interface ApiTransactionItem {
+  id: string;
+  source_account: string;
+  target_account: string;
+  amount: number;
+  currency: string;
+  timestamp: string;
+  channel: string;
+  is_flagged: boolean;
+  pattern_type: string;
+  risk_score: number;
+}
+
 class FraudGraphApiClient {
   private baseUrl: string;
 
@@ -179,6 +215,54 @@ class FraudGraphApiClient {
       return await res.json();
     } catch {
       return null;
+    }
+  }
+
+  async getAlerts(severity?: string, status?: string, search?: string): Promise<ApiAlertItem[]> {
+    try {
+      const params = new URLSearchParams();
+      if (severity && severity !== 'all') params.append('severity', severity);
+      if (status && status !== 'all') params.append('status', status);
+      if (search) params.append('search', search);
+
+      const res = await fetch(`${this.baseUrl}/alerts/?${params.toString()}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  async escalateAlert(alertId: string, targetAccount: string, analystNotes?: string): Promise<EscalateAlertResponse | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/alerts/escalate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          alert_id: alertId,
+          target_account: targetAccount,
+          analyst_notes: analystNotes || 'Escalated for immediate multi-agent critical review',
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async getTransactions(patternType?: string, minAmount?: number, search?: string): Promise<ApiTransactionItem[]> {
+    try {
+      const params = new URLSearchParams();
+      if (patternType && patternType !== 'all') params.append('pattern_type', patternType);
+      if (minAmount !== undefined && minAmount > 0) params.append('min_amount', minAmount.toString());
+      if (search) params.append('search', search);
+
+      const res = await fetch(`${this.baseUrl}/transactions/?${params.toString()}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
     }
   }
 }

@@ -90,4 +90,68 @@ describe('FraudGraphApiClient Unit Tests', () => {
     const url = apiClient.getInvestigationStreamUrl('FG-8421', 'TR-90421073', 'ibm_amlsim_500k');
     expect(url).toBe('/api/v1/investigations/stream/FG-8421?entity_id=TR-90421073&dataset=ibm_amlsim_500k');
   });
+
+  it('fetches alerts list and handles filtering', async () => {
+    const mockAlerts = [
+      {
+        id: 'ALT-1094',
+        title: 'Rapid Outbound Fund Dispersion',
+        risk_level: 'Critical',
+        risk_score: 0.94,
+        target_account: 'TR-90421073',
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockAlerts,
+    } as Response);
+
+    const alerts = await apiClient.getAlerts('Critical', 'Open');
+    expect(alerts.length).toBe(1);
+    expect(alerts[0].id).toBe('ALT-1094');
+  });
+
+  it('escalates alert and receives cryptographic proof anchor', async () => {
+    const mockEscalate = {
+      alert_id: 'ALT-1094',
+      case_id: 'FG-1094',
+      status: 'Escalated to Multi-Agent Supervisor',
+      lead_analyst: 'Emre Kaya',
+      sha256_audit_hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      message: 'Escalated successfully',
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockEscalate,
+    } as Response);
+
+    const res = await apiClient.escalateAlert('ALT-1094', 'TR-90421073');
+    expect(res).not.toBeNull();
+    expect(res?.case_id).toBe('FG-1094');
+    expect(res?.sha256_audit_hash.length).toBe(64);
+  });
+
+  it('fetches streaming transactions list with amount filter', async () => {
+    const mockTxs = [
+      {
+        id: 'TX-901842',
+        source_account: 'TR-90421073',
+        target_account: 'TR-38192044',
+        amount: 3850000,
+        currency: 'TRY',
+        pattern_type: 'layering',
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockTxs,
+    } as Response);
+
+    const txs = await apiClient.getTransactions('layering', 1000000);
+    expect(txs.length).toBe(1);
+    expect(txs[0].id).toBe('TX-901842');
+  });
 });

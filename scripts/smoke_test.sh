@@ -41,4 +41,12 @@ echo "🔍 Validating FinCEN SAR XML Export (RQ-04)..."
 curl -sf http://127.0.0.1:$PORT/api/v1/evidence/FG-8421/sar-xml | grep -q "<SuspiciousActivityReport"
 echo "   [PASSED] /api/v1/evidence/FG-8421/sar-xml"
 
+echo "🔍 Validating Alert Intelligence Feed Endpoint..."
+curl -sf http://127.0.0.1:$PORT/api/v1/alerts/ | grep -q "ALT-1094"
+echo "   [PASSED] /api/v1/alerts/"
+
+echo "🔍 Validating Transaction Intelligence Feed Endpoint..."
+curl -sf "http://127.0.0.1:$PORT/api/v1/transactions/?min_amount=1000000" | grep -q "TX-901842"
+echo "   [PASSED] /api/v1/transactions/"
+
 echo "🎉 All smoke test endpoints verified successfully!"
