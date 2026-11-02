@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.api.v1.endpoints import graphs, risk, investigations, evidence, datasets, benchmarks, alerts, transactions
+from src.api.v1.endpoints import graphs, risk, investigations, evidence, datasets, benchmarks, alerts, transactions, rules
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(graphs.router)
@@ -10,3 +10,4 @@ api_router.include_router(datasets.router)
 api_router.include_router(benchmarks.router)
 api_router.include_router(alerts.router)
 api_router.include_router(transactions.router)
+api_router.include_router(rules.router)

@@ -154,4 +154,48 @@ describe('FraudGraphApiClient Unit Tests', () => {
     expect(txs.length).toBe(1);
     expect(txs[0].id).toBe('TX-901842');
   });
+
+  it('fetches AML detection rules and executes backtest simulation', async () => {
+    const mockRules = [
+      {
+        id: 'RUL-CIRC-01',
+        name: 'Closed Multi-Hop Circular Flow Detector',
+        typology: 'circular_layering',
+        is_active: true,
+      },
+    ];
+
+    const mockSim = {
+      rule_id: 'RUL-CIRC-01',
+      rule_name: 'Closed Multi-Hop Circular Flow Detector',
+      dataset: 'ibm_amlsim_500k',
+      simulated_entities_count: 100,
+      rule_hits_count: 3,
+      hit_rate_percentage: 3.0,
+      total_exposure_volume_try: 22290000.0,
+      estimated_false_positive_rate: 0.038,
+      execution_time_ms: 18.4,
+      sample_flagged_entities: ['TR-90421073'],
+    };
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRules,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSim,
+      } as Response);
+
+    const rules = await apiClient.getRules('circular_layering');
+    expect(rules.length).toBe(1);
+    expect(rules[0].id).toBe('RUL-CIRC-01');
+
+    const sim = await apiClient.simulateRule('RUL-CIRC-01');
+    expect(sim).not.toBeNull();
+    expect(sim?.rule_hits_count).toBe(3);
+    expect(sim?.total_exposure_volume_try).toBeGreaterThan(0);
+  });
 });
